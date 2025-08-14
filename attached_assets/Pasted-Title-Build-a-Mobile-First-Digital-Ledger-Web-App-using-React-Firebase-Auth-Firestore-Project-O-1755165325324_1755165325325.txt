@@ -1,0 +1,160 @@
+Title:
+Build a Mobile-First Digital Ledger Web App using React, Firebase Auth & Firestore
+
+Project Overview
+
+I want to create a mobile-first web-based digital ledger that replicates a traditional ledger book but with modern digital features.
+The app will allow small business owners to record daily transactions in an easy-to-use, responsive interface optimized for smartphones first (desktop as secondary).
+
+Core Requirements
+Authentication
+
+Implement Firebase Authentication.
+Support Email/Password login (Google Sign-In).
+Ensure strict data isolation per uid.
+For this app there will be a single user(one who manages the record)
+
+
+Database
+Use Cloud Firestore.
+
+Data Model:
+users/{uid}
+users/{uid}/transactions/{txnId}
+
+
+
+Transaction fields:
+date (timestamp)
+particulars (string)
+Bill no (number)
+debitAmount (number)
+creditAmount (number)
+balanceAfter (number)
+createdAt (timestamp)
+Ledger Functionality
+
+Add, edit, delete transactions.
+
+
+The suppliers(business) will have multiple clients(customers)
+The ledger will be maintained for each clinet. 
+New clinets may be added. so we need to implement option to add new clien too.. 
+A client mgmt UI also  required...
+
+Balance auto-calculation after each transaction.
+Month-wise grouping of transactions.
+Search & filter by:
+Date range
+Transaction type (credit/debit)
+Customer name
+
+Reports
+
+Monthly credit/debit totals
+
+Running balance view
+
+Export to PDF/Excel (phase 2)
+
+Simple bar/line charts for trends
+
+UI/UX Requirements (Mobile-First Priority)
+
+Mobile-first: Design should fit small screens perfectly; desktop is secondary.
+
+Column layout similar to traditional ledger, but:
+
+On mobile, use collapsible cards for each transaction (e.g., tap to expand details).
+
+On desktop, show full table view.
+
+Sticky top navigation with:
+
+Month selector
+
+“Add Transaction” button (FAB on mobile)
+
+Color coding:
+
+Credits → green
+Debits → red
+
+Smooth animations for add/edit/delete.
+
+Readable typography, adequate padding.
+
+Responsive Design:
+
+Tailwind CSS preferred for quick responsiveness.
+Use grid/flex layouts.
+
+Implementation Strategy
+
+Tech Stack
+
+React (functional components + hooks)
+
+Tailwind CSS (for mobile responsiveness)
+
+Firebase SDK (Auth + Firestore)
+
+Hosting: Firebase Hosting
+
+Development Steps
+
+Setup Firebase project (Auth + Firestore + Hosting)
+
+Implement auth flow: signup/login/logout
+
+Firestore security rules to restrict by uid
+
+Build transaction list component:
+
+Mobile → cards
+
+Desktop → table
+
+Create “Add Transaction” modal/form with validation
+
+Implement balance auto-calculation logic
+
+Month selector & filters
+
+Reports page with charts (use Chart.js or Recharts)
+
+Optimize for offline support (Firestore persistence)
+
+Deploy to Firebase Hosting
+
+Security
+
+Validate inputs in both frontend & backend (Firestore rules)
+
+Restrict all reads/writes to authenticated user’s uid
+
+Scalability
+
+Transactions stored in subcollections for efficient querying
+
+Pagination or infinite scroll for large datasets
+
+Ready for multi-business support later
+
+Expected Output from AI
+
+Complete React + Tailwind codebase with Firebase integration
+
+Fully mobile-optimized UI, responsive for desktop
+
+Auth flow working (signup/login/logout)
+
+Month-wise grouped transactions (mobile → cards, desktop → table)
+
+“Add Transaction” modal with validation
+
+Balance auto-calculation
+
+Clean, consistent, modern UI
+
+Deployment-ready for Firebase Hosting
