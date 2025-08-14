@@ -14,7 +14,11 @@ export default function Reports() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString());
   const { toast } = useToast();
 
-  const { data: monthlyTotals, isLoading } = useQuery({
+  const { data: monthlyTotals, isLoading } = useQuery<{
+    totalCredits: string;
+    totalDebits: string;
+    netBalance: string;
+  }>({
     queryKey: ["/api/reports/monthly", selectedYear, selectedMonth],
     queryFn: async () => {
       const response = await fetch(`/api/reports/monthly/${selectedYear}/${selectedMonth}`, {
@@ -26,18 +30,6 @@ export default function Reports() {
       }
       
       return response.json();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-      }
     },
   });
 

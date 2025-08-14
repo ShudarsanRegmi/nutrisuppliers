@@ -109,7 +109,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(clients)
       .where(and(eq(clients.id, id), eq(clients.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Transaction operations
@@ -119,25 +119,22 @@ export class DatabaseStorage implements IStorage {
     type?: 'credit' | 'debit';
     search?: string;
   }): Promise<Transaction[]> {
-    let query = db
-      .select()
-      .from(transactions)
-      .where(and(eq(transactions.clientId, clientId), eq(transactions.userId, userId)));
+    const conditions = [eq(transactions.clientId, clientId), eq(transactions.userId, userId)];
 
     if (filters?.startDate) {
-      query = query.where(gte(transactions.date, filters.startDate));
+      conditions.push(gte(transactions.date, filters.startDate));
     }
     if (filters?.endDate) {
-      query = query.where(lte(transactions.date, filters.endDate));
+      conditions.push(lte(transactions.date, filters.endDate));
     }
     if (filters?.type === 'credit') {
-      query = query.where(eq(transactions.creditAmount, '0'));
+      conditions.push(eq(transactions.debitAmount, '0'));
     }
     if (filters?.type === 'debit') {
-      query = query.where(eq(transactions.debitAmount, '0'));
+      conditions.push(eq(transactions.creditAmount, '0'));
     }
     if (filters?.search) {
-      query = query.where(
+      conditions.push(
         or(
           ilike(transactions.particulars, `%${filters.search}%`),
           ilike(transactions.billNo, `%${filters.search}%`)
@@ -145,7 +142,11 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    return await query.orderBy(desc(transactions.date));
+    return await db
+      .select()
+      .from(transactions)
+      .where(and(...conditions))
+      .orderBy(desc(transactions.date));
   }
 
   async getTransaction(id: number, userId: string): Promise<Transaction | undefined> {
@@ -213,7 +214,7 @@ export class DatabaseStorage implements IStorage {
       .delete(transactions)
       .where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
 
-    if (result.rowCount > 0) {
+    if ((result.rowCount ?? 0) > 0) {
       // Recalculate balances for remaining transactions
       await this.recalculateBalances(transaction.clientId, userId);
       return true;

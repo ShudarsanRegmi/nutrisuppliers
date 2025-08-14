@@ -62,6 +62,7 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
                 <Input 
                   placeholder="+91 98765 43210" 
                   {...field} 
+                  value={field.value || ""}
                   data-testid="input-client-contact"
                 />
               </FormControl>
@@ -81,6 +82,7 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
                   type="email" 
                   placeholder="client@example.com" 
                   {...field} 
+                  value={field.value || ""}
                   data-testid="input-client-email"
                 />
               </FormControl>
@@ -100,6 +102,7 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
                   placeholder="Client address" 
                   rows={3} 
                   {...field} 
+                  value={field.value || ""}
                   data-testid="input-client-address"
                 />
               </FormControl>

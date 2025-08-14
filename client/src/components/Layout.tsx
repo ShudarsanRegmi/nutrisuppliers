@@ -3,6 +3,7 @@ import { Users, BookOpen, BarChart3, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@shared/schema";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LayoutProps {
@@ -13,7 +14,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, currentView, onViewChange, selectedClientId }: LayoutProps) {
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: User | undefined };
   const isMobile = useIsMobile();
   const [selectedMonth, setSelectedMonth] = useState("December 2024");
 

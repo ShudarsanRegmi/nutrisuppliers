@@ -104,6 +104,10 @@ export const insertClientSchema = createInsertSchema(clients).omit({
   userId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contact: z.string().nullish(),
+  email: z.string().nullish(),
+  address: z.string().nullish(),
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
@@ -111,4 +115,8 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   userId: true,
   balanceAfter: true,
   createdAt: true,
+}).extend({
+  billNo: z.string().nullish(),
+  debitAmount: z.string().nullish(),
+  creditAmount: z.string().nullish(),
 });

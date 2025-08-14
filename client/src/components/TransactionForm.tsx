@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
 
-const transactionFormSchema = insertTransactionSchema.extend({
+const transactionFormSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  particulars: z.string().min(1, "Particulars is required"),
+  billNo: z.string().optional(),
+  clientId: z.number().optional(),
   type: z.enum(["credit", "debit"]),
   amount: z.string().min(1, "Amount is required"),
-}).omit({
-  debitAmount: true,
-  creditAmount: true,
 });
 
 type TransactionFormData = z.infer<typeof transactionFormSchema>;
@@ -41,7 +42,7 @@ export default function TransactionForm({ onSubmit, isLoading = false, defaultVa
     const transactionData = {
       date: data.date,
       particulars: data.particulars,
-      billNo: data.billNo,
+      billNo: data.billNo || "",
       debitAmount: data.type === "debit" ? amount.toString() : "0",
       creditAmount: data.type === "credit" ? amount.toString() : "0",
       clientId: data.clientId,

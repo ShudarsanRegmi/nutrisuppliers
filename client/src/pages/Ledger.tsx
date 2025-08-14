@@ -44,11 +44,11 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/clients", selectedClientId, "transactions", { searchTerm, transactionType, startDate, endDate }],
     enabled: !!selectedClientId,
     queryFn: async () => {
@@ -67,18 +67,6 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
       }
       
       return response.json();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-      }
     },
   });
 

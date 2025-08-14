@@ -120,11 +120,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const clientId = parseInt(req.params.clientId);
       
-      const transactionData = insertTransactionSchema.parse({
+      const transactionData = {
         ...req.body,
         clientId,
         date: new Date(req.body.date),
-      });
+        debitAmount: req.body.debitAmount || "0",
+        creditAmount: req.body.creditAmount || "0",
+        billNo: req.body.billNo || "",
+      };
       
       const transaction = await storage.createTransaction(transactionData, userId);
       res.json(transaction);
