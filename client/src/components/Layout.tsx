@@ -3,29 +3,33 @@ import { Users, BookOpen, BarChart3, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import type { User } from "@shared/schema";
+import { signOutUser } from "@/lib/firebaseAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LayoutProps {
   children: React.ReactNode;
   currentView: 'clients' | 'ledger' | 'reports';
   onViewChange: (view: 'clients' | 'ledger' | 'reports') => void;
-  selectedClientId?: number | null;
+  selectedClientId?: string | null;
 }
 
 export default function Layout({ children, currentView, onViewChange, selectedClientId }: LayoutProps) {
-  const { user } = useAuth() as { user: User | undefined };
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const [selectedMonth, setSelectedMonth] = useState("December 2024");
 
-  const getInitials = (firstName?: string, lastName?: string) => {
+  const getInitials = (firstName?: string | null, lastName?: string | null) => {
     const first = firstName?.[0] || '';
     const last = lastName?.[0] || '';
     return (first + last).toUpperCase() || 'U';
   };
 
-  const handleLogout = () => {
-    window.location.href = '/api/logout';
+  const handleLogout = async () => {
+    try {
+      await signOutUser();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (

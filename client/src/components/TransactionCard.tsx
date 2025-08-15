@@ -2,50 +2,45 @@ import { useState } from "react";
 import { ChevronDown, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface Transaction {
-  id: number;
-  date: string;
-  particulars: string;
-  billNo: string;
-  debitAmount: string;
-  creditAmount: string;
-  balanceAfter: string;
-}
+import { TransactionWithBalance } from "@/lib/firebaseTypes";
 
 interface TransactionCardProps {
-  transaction: Transaction;
-  onEdit?: (transaction: Transaction) => void;
-  onDelete: (transactionId: number) => void;
+  transaction: TransactionWithBalance;
+  onEdit: (transaction: TransactionWithBalance) => void;
+  onDelete: (transactionId: string) => void;
 }
 
 export default function TransactionCard({ transaction, onEdit, onDelete }: TransactionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const formatAmount = (amount: string) => {
-    const num = parseFloat(amount);
-    return num === 0 ? "-" : `₹${num.toLocaleString()}`;
+  const formatAmount = (amount: number) => {
+    return amount === 0 ? "-" : `₹${amount.toLocaleString()}`;
   };
 
-  const formatBalance = (balance: string) => {
-    const numBalance = parseFloat(balance);
-    return `₹${numBalance.toLocaleString()}`;
+  const formatBalance = (balance: number) => {
+    return `₹${balance.toLocaleString()}`;
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   };
 
-  const isCredit = parseFloat(transaction.creditAmount) > 0;
-  const isDebit = parseFloat(transaction.debitAmount) > 0;
+  const isCredit = transaction.creditAmount > 0;
+  const isDebit = transaction.debitAmount > 0;
   const amount = isCredit ? transaction.creditAmount : transaction.debitAmount;
 
+  // Determine card background color based on transaction type
+  // Credit = payment received (good) = green, Debit = product taken without payment (concerning) = red
+  const cardBgClass = isCredit
+    ? "bg-green-50 border-green-200"
+    : "bg-red-50 border-red-200";
+
   return (
-    <Card className="overflow-hidden" data-testid={`card-transaction-${transaction.id}`}>
+    <Card className={`overflow-hidden ${cardBgClass}`} data-testid={`card-transaction-${transaction.id}`}>
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
@@ -64,7 +59,9 @@ export default function TransactionCard({ transaction, onEdit, onDelete }: Trans
               {isCredit ? '+' : '-'}{formatAmount(amount)}
             </p>
             <p className="text-sm text-gray-500" data-testid={`text-balance-${transaction.id}`}>
-              Bal: {formatBalance(transaction.balanceAfter)}
+              Balance Due: {formatBalance(transaction.balanceAfter)}
+              {transaction.balanceAfter > 0 && <span className="text-red-600 ml-1">(Owes)</span>}
+              {transaction.balanceAfter < 0 && <span className="text-green-600 ml-1">(Overpaid)</span>}
             </p>
           </div>
         </div>
@@ -120,9 +117,37 @@ export default function TransactionCard({ transaction, onEdit, onDelete }: Trans
               </p>
             </div>
             <div>
-              <span className="text-gray-500">Running Balance:</span>
+              <span className="text-gray-500">Balance Due:</span>
               <p className="font-medium">{formatBalance(transaction.balanceAfter)}</p>
             </div>
+            <div>
+              <span className="text-gray-500">Created:</span>
+              <p className="font-medium">{formatDate(transaction.createdAt)}</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-2 mt-4 pt-3 border-t border-gray-200">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(transaction)}
+              className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+              data-testid={`button-edit-${transaction.id}`}
+            >
+              <Edit size={14} className="mr-1" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDelete(transaction.id)}
+              className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+              data-testid={`button-delete-${transaction.id}`}
+            >
+              <Trash2 size={14} className="mr-1" />
+              Delete
+            </Button>
           </div>
         </div>
       )}

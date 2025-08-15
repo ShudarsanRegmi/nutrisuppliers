@@ -1,17 +1,17 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertTransactionSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
+import { InsertTransaction, TransactionWithBalance } from "@/lib/firebaseTypes";
 
 const transactionFormSchema = z.object({
   date: z.string().min(1, "Date is required"),
   particulars: z.string().min(1, "Particulars is required"),
   billNo: z.string().optional(),
-  clientId: z.number().optional(),
+  clientId: z.string().optional(),
   type: z.enum(["credit", "debit"]),
   amount: z.string().min(1, "Amount is required"),
 });
@@ -19,34 +19,69 @@ const transactionFormSchema = z.object({
 type TransactionFormData = z.infer<typeof transactionFormSchema>;
 
 interface TransactionFormProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: InsertTransaction) => void;
   isLoading?: boolean;
   defaultValues?: Partial<TransactionFormData>;
+  clientId?: string | null;
+  editTransaction?: TransactionWithBalance | null;
+  mode?: "create" | "edit";
 }
 
-export default function TransactionForm({ onSubmit, isLoading = false, defaultValues }: TransactionFormProps) {
-  const form = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionFormSchema),
-    defaultValues: {
+export default function TransactionForm({
+  onSubmit,
+  isLoading = false,
+  defaultValues,
+  clientId,
+  editTransaction,
+  mode = "create"
+}: TransactionFormProps) {
+
+  // Prepare default values for edit mode
+  const getDefaultValues = () => {
+    if (mode === "edit" && editTransaction) {
+      const isCredit = editTransaction.creditAmount > 0;
+      const amount = isCredit ? editTransaction.creditAmount : editTransaction.debitAmount;
+
+      return {
+        date: editTransaction.date.toISOString().split('T')[0],
+        particulars: editTransaction.particulars,
+        billNo: editTransaction.billNo || "",
+        type: isCredit ? "credit" as const : "debit" as const,
+        amount: amount.toString(),
+      };
+    }
+
+    return {
       date: new Date().toISOString().split('T')[0],
       particulars: "",
       billNo: "",
-      type: "credit",
+      type: "credit" as const,
       amount: "",
       ...defaultValues,
-    },
+    };
+  };
+
+  const form = useForm<TransactionFormData>({
+    resolver: zodResolver(transactionFormSchema),
+    defaultValues: getDefaultValues(),
   });
 
   const handleSubmit = (data: TransactionFormData) => {
+    if (!clientId) {
+      console.error("No client selected");
+      return;
+    }
+
     const amount = parseFloat(data.amount);
-    const transactionData = {
-      date: data.date,
+    const transactionData: InsertTransaction = {
+      date: new Date(data.date),
       particulars: data.particulars,
-      billNo: data.billNo || "",
-      debitAmount: data.type === "debit" ? amount.toString() : "0",
-      creditAmount: data.type === "credit" ? amount.toString() : "0",
-      clientId: data.clientId,
+      billNo: data.billNo || undefined,
+      debitAmount: data.type === "debit" ? amount : 0,
+      creditAmount: data.type === "credit" ? amount : 0,
     };
+
+    console.log("Submitting transaction with clientId:", clientId);
     
     onSubmit(transactionData);
   };
@@ -121,8 +156,8 @@ export default function TransactionForm({ onSubmit, isLoading = false, defaultVa
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="credit">Credit (+)</SelectItem>
-                  <SelectItem value="debit">Debit (-)</SelectItem>
+                  <SelectItem value="credit">Credit - Payment Received</SelectItem>
+                  <SelectItem value="debit">Debit - Product/Service Given</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -151,13 +186,16 @@ export default function TransactionForm({ onSubmit, isLoading = false, defaultVa
         />
         
         <div className="flex space-x-3 pt-4">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="flex-1 bg-primary text-white hover:bg-primary-dark"
             disabled={isLoading}
             data-testid="button-submit-transaction"
           >
-            {isLoading ? "Adding..." : "Add Transaction"}
+            {isLoading
+              ? (mode === "edit" ? "Updating..." : "Adding...")
+              : (mode === "edit" ? "Update Transaction" : "Add Transaction")
+            }
           </Button>
         </div>
       </form>

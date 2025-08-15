@@ -4,37 +4,30 @@ import { TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { useAuth } from "@/hooks/useAuth";
+import { getMonthlyTotals } from "@/lib/firebaseDb";
+import { MonthlyTotals } from "@/lib/firebaseTypes";
 
 export default function Reports() {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
-  
+
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString());
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const { data: monthlyTotals, isLoading } = useQuery<{
-    totalCredits: string;
-    totalDebits: string;
-    netBalance: string;
-  }>({
-    queryKey: ["/api/reports/monthly", selectedYear, selectedMonth],
+  const { data: monthlyTotals, isLoading } = useQuery<MonthlyTotals>({
+    queryKey: ["reports", "monthly", user?.id, selectedYear, selectedMonth],
     queryFn: async () => {
-      const response = await fetch(`/api/reports/monthly/${selectedYear}/${selectedMonth}`, {
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`);
-      }
-      
-      return response.json();
+      if (!user?.id) throw new Error("User not authenticated");
+      return await getMonthlyTotals(user.id, parseInt(selectedYear), parseInt(selectedMonth));
     },
+    enabled: !!user?.id,
   });
 
-  const formatAmount = (amount: string) => {
-    return `₹${parseFloat(amount).toLocaleString()}`;
+  const formatAmount = (amount: number) => {
+    return `₹${amount.toLocaleString()}`;
   };
 
   const monthNames = [
@@ -103,7 +96,7 @@ export default function Reports() {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Total Credits</p>
                       <p className="text-2xl font-bold text-success" data-testid="text-total-credits">
-                        {monthlyTotals ? formatAmount(monthlyTotals.totalCredits) : '₹0'}
+                        {monthlyTotals ? formatAmount(monthlyTotals.totalCredit) : '₹0'}
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-success rounded-full flex items-center justify-center">
@@ -120,7 +113,7 @@ export default function Reports() {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Total Debits</p>
                       <p className="text-2xl font-bold text-error" data-testid="text-total-debits">
-                        {monthlyTotals ? formatAmount(monthlyTotals.totalDebits) : '₹0'}
+                        {monthlyTotals ? formatAmount(monthlyTotals.totalDebit) : '₹0'}
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-error rounded-full flex items-center justify-center">
@@ -137,7 +130,7 @@ export default function Reports() {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Net Balance</p>
                       <p className="text-2xl font-bold text-primary" data-testid="text-net-balance">
-                        {monthlyTotals ? formatAmount(monthlyTotals.netBalance) : '₹0'}
+                        {monthlyTotals ? formatAmount(monthlyTotals.netAmount) : '₹0'}
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">

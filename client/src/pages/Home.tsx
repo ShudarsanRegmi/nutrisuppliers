@@ -6,9 +6,9 @@ import Reports from "./Reports";
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<'clients' | 'ledger' | 'reports'>('clients');
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
-  const handleClientSelect = (clientId: number) => {
+  const handleClientSelect = (clientId: string) => {
     setSelectedClientId(clientId);
     setCurrentView('ledger');
   };

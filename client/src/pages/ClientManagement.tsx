@@ -1,65 +1,100 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { useAuth } from "@/hooks/useAuth";
 import ClientForm from "@/components/ClientForm";
+import {
+  getClients,
+  createClient,
+  getClientBalance,
+  getTransactions,
+  removeStoredBalances
+} from "@/lib/firebaseDb";
+import { Client, InsertClient } from "@/lib/firebaseTypes";
 
-interface Client {
-  id: number;
-  name: string;
-  contact: string;
-  email: string;
-  address: string;
-  balance: string;
+interface ClientWithStats extends Client {
+  balance: number;
   transactionCount: number;
-  lastActivity: string;
+  lastActivity: Date;
 }
 
 interface ClientManagementProps {
-  onClientSelect: (clientId: number) => void;
+  onClientSelect: (clientId: string) => void;
 }
 
 export default function ClientManagement({ onClientSelect }: ClientManagementProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  const { data: clients = [], isLoading } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
+  const { data: clients = [], isLoading } = useQuery<ClientWithStats[]>({
+    queryKey: ["clients", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const clientsData = await getClients(user.id);
+
+      // Add balance and transaction count to each client
+      const clientsWithStats = await Promise.all(
+        clientsData.map(async (client) => {
+          const balance = await getClientBalance(user.id, client.id);
+          const transactions = await getTransactions(user.id, client.id);
+          return {
+            ...client,
+            balance,
+            transactionCount: transactions.length,
+            lastActivity: transactions.length > 0 ? transactions[0].date : client.createdAt,
+          };
+        })
+      );
+
+      return clientsWithStats;
+    },
+    enabled: !!user?.id,
   });
 
   const createClientMutation = useMutation({
-    mutationFn: async (clientData: any) => {
-      const response = await apiRequest("POST", "/api/clients", clientData);
-      return response.json();
+    mutationFn: async (clientData: InsertClient) => {
+      if (!user?.id) throw new Error("User not authenticated");
+      return await createClient(user.id, clientData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients", user?.id] });
       setIsAddDialogOpen(false);
       toast({
         title: "Success",
         description: "Client added successfully",
       });
     },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized", 
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to add client",
+        description: error.message || "Failed to add client",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cleanupBalancesMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      if (!user?.id) throw new Error("User not authenticated");
+      return await removeStoredBalances(user.id, clientId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients", user?.id] });
+      toast({
+        title: "Success",
+        description: "Old balance data cleaned up successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cleanup balance data",
         variant: "destructive",
       });
     },
@@ -74,17 +109,18 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
       .slice(0, 2);
   };
 
-  const formatBalance = (balance: string) => {
-    const numBalance = parseFloat(balance);
-    return numBalance >= 0 ? `₹${numBalance.toLocaleString()}` : `₹${Math.abs(numBalance).toLocaleString()}`;
+  const formatBalance = (balance: number) => {
+    return balance >= 0 ? `₹${balance.toLocaleString()}` : `₹${Math.abs(balance).toLocaleString()}`;
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+  const formatDate = (date: Date | undefined | null) => {
+    if (!date) return "No activity";
+
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const dateObj = date instanceof Date ? date : new Date(date);
+    const diffTime = Math.abs(now.getTime() - dateObj.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 1) return "Today";
     if (diffDays === 2) return "Yesterday";
     if (diffDays <= 7) return `${diffDays} days ago`;
@@ -124,6 +160,9 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Client</DialogTitle>
+              <DialogDescription>
+                Add a new client to your digital ledger. Fill in the client details below.
+              </DialogDescription>
             </DialogHeader>
             <ClientForm 
               onSubmit={(data) => createClientMutation.mutate(data)}
@@ -168,28 +207,60 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm text-gray-500">Balance</span>
-                  <p 
-                    className={`font-bold text-lg ${parseFloat(client.balance) >= 0 ? 'balance-positive' : 'balance-negative'}`}
+                  <span className="text-sm text-gray-500">Balance Due</span>
+                  <p
+                    className={`font-bold text-lg ${(client.balance || 0) > 0 ? 'text-red-600' : (client.balance || 0) < 0 ? 'text-green-600' : 'text-gray-600'}`}
                     data-testid={`text-balance-${client.id}`}
                   >
-                    {formatBalance(client.balance)}
+                    {formatBalance(client.balance || 0)}
                   </p>
                 </div>
               </div>
               <h3 className="font-semibold text-lg text-gray-900 mb-2" data-testid={`text-name-${client.id}`}>
                 {client.name}
               </h3>
-              <p className="text-gray-600 text-sm mb-4" data-testid={`text-contact-${client.id}`}>
-                {client.contact}
-              </p>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span data-testid={`text-transaction-count-${client.id}`}>
-                  {client.transactionCount} transactions
-                </span>
-                <span data-testid={`text-last-activity-${client.id}`}>
-                  {formatDate(client.lastActivity)}
-                </span>
+              <div className="text-gray-600 text-sm mb-4 space-y-1">
+                {client.contact && (
+                  <p data-testid={`text-contact-${client.id}`}>
+                    📞 {client.contact}
+                  </p>
+                )}
+                {client.email && (
+                  <p data-testid={`text-email-${client.id}`}>
+                    ✉️ {client.email}
+                  </p>
+                )}
+                {client.address && (
+                  <p data-testid={`text-address-${client.id}`}>
+                    📍 {client.address}
+                  </p>
+                )}
+                {!client.contact && !client.email && !client.address && (
+                  <p className="text-gray-400 italic">No contact details</p>
+                )}
+              </div>
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <div className="flex flex-col">
+                  <span data-testid={`text-transaction-count-${client.id}`}>
+                    {client.transactionCount || 0} transactions
+                  </span>
+                  <span data-testid={`text-last-activity-${client.id}`}>
+                    {client.lastActivity ? formatDate(client.lastActivity) : "No activity"}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cleanupBalancesMutation.mutate(client.id);
+                  }}
+                  disabled={cleanupBalancesMutation.isPending}
+                  className="text-xs"
+                  title="Remove old stored balance data"
+                >
+                  Cleanup
+                </Button>
               </div>
             </div>
           ))}
