@@ -38,7 +38,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   const { user } = useAuth();
 
   const { data: clients = [], isLoading } = useQuery<ClientWithStats[]>({
-    queryKey: ["clients", user?.id],
+    queryKey: ["clientsWithStats", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
@@ -71,11 +71,15 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     onSuccess: () => {
       // Invalidate all client-related queries
       queryClient.invalidateQueries({
-        queryKey: ["clients"],
+        queryKey: ["clientsWithStats"],
         exact: false
       });
       queryClient.invalidateQueries({
         queryKey: ["clientBalance"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["allTransactions"],
         exact: false
       });
       setIsAddDialogOpen(false);
@@ -101,11 +105,15 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     onSuccess: () => {
       // Invalidate all client-related queries
       queryClient.invalidateQueries({
-        queryKey: ["clients"],
+        queryKey: ["clientsWithStats"],
         exact: false
       });
       queryClient.invalidateQueries({
         queryKey: ["clientBalance"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["allTransactions"],
         exact: false
       });
       setIsEditDialogOpen(false);

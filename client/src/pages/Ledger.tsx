@@ -154,7 +154,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
         exact: false
       });
       queryClient.invalidateQueries({
-        queryKey: ["clients"],
+        queryKey: ["clientsWithStats"],
         exact: false
       });
       queryClient.invalidateQueries({
@@ -195,7 +195,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
         exact: false
       });
       queryClient.invalidateQueries({
-        queryKey: ["clients"],
+        queryKey: ["clientsWithStats"],
         exact: false
       });
       queryClient.invalidateQueries({
@@ -234,7 +234,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
         exact: false
       });
       queryClient.invalidateQueries({
-        queryKey: ["clients"],
+        queryKey: ["clientsWithStats"],
         exact: false
       });
       queryClient.invalidateQueries({

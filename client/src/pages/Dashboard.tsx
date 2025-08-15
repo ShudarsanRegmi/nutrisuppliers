@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, BookOpen, TrendingUp, Plus, ArrowRight, Package, Stethoscope, Pill } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getClients, getAllTransactions } from "@/lib/firebaseDb";
+import { getClients, getAllTransactions, getClientBalance } from "@/lib/firebaseDb";
 import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardProps {
@@ -14,17 +14,53 @@ interface DashboardProps {
 export default function Dashboard({ onNavigate, onClientSelect }: DashboardProps) {
   const { user } = useAuth();
 
-  // Fetch clients
+  // Fetch clients with balance and transaction data
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients", user?.id],
-    queryFn: () => user?.id ? getClients(user.id) : Promise.resolve([]),
+    queryKey: ["clientsWithStats", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const clientsData = await getClients(user.id);
+
+      // Add balance and transaction count to each client
+      const clientsWithStats = await Promise.all(
+        clientsData.map(async (client) => {
+          const balance = await getClientBalance(user.id, client.id);
+          const transactions = await getAllTransactions(user.id, client.id, "createdAt", "desc");
+          return {
+            ...client,
+            balance,
+            transactionCount: transactions.length,
+            lastActivity: transactions.length > 0 ? transactions[0].createdAt : null,
+          };
+        })
+      );
+
+      return clientsWithStats;
+    },
     enabled: !!user?.id,
   });
 
-  // Fetch recent transactions
+  // Fetch recent transactions across all clients
   const { data: allTransactions = [] } = useQuery({
     queryKey: ["allTransactions", user?.id],
-    queryFn: () => user?.id ? getAllTransactions(user.id) : Promise.resolve([]),
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      // Get all transactions across all clients
+      const clientsData = await getClients(user.id);
+      const allTransactionsPromises = clientsData.map(client =>
+        getAllTransactions(user.id, client.id, "createdAt", "desc")
+      );
+
+      const transactionArrays = await Promise.all(allTransactionsPromises);
+      const flatTransactions = transactionArrays.flat();
+
+      // Sort by creation date, newest first
+      return flatTransactions.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    },
     enabled: !!user?.id,
   });
 
@@ -32,9 +68,13 @@ export default function Dashboard({ onNavigate, onClientSelect }: DashboardProps
   const totalClients = clients.length;
   const totalTransactions = allTransactions.length;
   const totalBalance = clients.reduce((sum, client) => sum + (client.balance || 0), 0);
-  const recentTransactions = allTransactions
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const recentTransactions = allTransactions.slice(0, 5);
+
+  // Helper to get client name for a transaction
+  const getClientName = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    return client?.name || 'Unknown Client';
+  };
 
   const formatBalance = (balance: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -189,7 +229,7 @@ export default function Dashboard({ onNavigate, onClientSelect }: DashboardProps
                             {transaction.particulars}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {formatDate(transaction.createdAt)}
+                            {getClientName(transaction.clientId)} • {formatDate(transaction.createdAt)}
                           </p>
                         </div>
                       </div>
