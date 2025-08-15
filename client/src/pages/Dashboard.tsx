@@ -5,6 +5,7 @@ import { Users, BookOpen, TrendingUp, Plus, ArrowRight, Package, Stethoscope, Pi
 import { useQuery } from "@tanstack/react-query";
 import { getClients, getAllTransactions, getClientBalance } from "@/lib/firebaseDb";
 import { useAuth } from "@/hooks/useAuth";
+import { TransactionWithClient } from "@/lib/firebaseTypes";
 
 interface DashboardProps {
   onNavigate: (view: 'clients' | 'ledger' | 'reports') => void;
@@ -42,16 +43,22 @@ export default function Dashboard({ onNavigate, onClientSelect }: DashboardProps
   });
 
   // Fetch recent transactions across all clients
-  const { data: allTransactions = [] } = useQuery({
+  const { data: allTransactions = [] } = useQuery<TransactionWithClient[]>({
     queryKey: ["allTransactions", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Get all transactions across all clients
+      // Get all transactions across all clients with client info
       const clientsData = await getClients(user.id);
-      const allTransactionsPromises = clientsData.map(client =>
-        getAllTransactions(user.id, client.id, "createdAt", "desc")
-      );
+      const allTransactionsPromises = clientsData.map(async (client) => {
+        const transactions = await getAllTransactions(user.id, client.id, "createdAt", "desc");
+        // Add client info to each transaction
+        return transactions.map(transaction => ({
+          ...transaction,
+          clientName: client.name,
+          clientId: client.id
+        }));
+      });
 
       const transactionArrays = await Promise.all(allTransactionsPromises);
       const flatTransactions = transactionArrays.flat();
@@ -69,12 +76,6 @@ export default function Dashboard({ onNavigate, onClientSelect }: DashboardProps
   const totalTransactions = allTransactions.length;
   const totalBalance = clients.reduce((sum, client) => sum + (client.balance || 0), 0);
   const recentTransactions = allTransactions.slice(0, 5);
-
-  // Helper to get client name for a transaction
-  const getClientName = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    return client?.name || 'Unknown Client';
-  };
 
   const formatBalance = (balance: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -229,7 +230,7 @@ export default function Dashboard({ onNavigate, onClientSelect }: DashboardProps
                             {transaction.particulars}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {getClientName(transaction.clientId)} • {formatDate(transaction.createdAt)}
+                            {transaction.clientName} • {formatDate(transaction.createdAt)}
                           </p>
                         </div>
                       </div>

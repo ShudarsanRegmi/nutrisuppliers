@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { getMonthlyTotals, getClients, getAllTransactions, getClientBalance } from "@/lib/firebaseDb";
-import { MonthlyTotals } from "@/lib/firebaseTypes";
+import { MonthlyTotals, TransactionWithClient } from "@/lib/firebaseTypes";
 import {
   BarChart,
   Bar,
@@ -55,15 +55,21 @@ export default function Reports() {
     enabled: !!user?.id,
   });
 
-  const { data: allTransactions = [] } = useQuery({
+  const { data: allTransactions = [] } = useQuery<TransactionWithClient[]>({
     queryKey: ["allTransactions", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
       const clientsData = await getClients(user.id);
-      const allTransactionsPromises = clientsData.map(client =>
-        getAllTransactions(user.id, client.id, "createdAt", "desc")
-      );
+      const allTransactionsPromises = clientsData.map(async (client) => {
+        const transactions = await getAllTransactions(user.id, client.id, "createdAt", "desc");
+        // Add client info to each transaction
+        return transactions.map(transaction => ({
+          ...transaction,
+          clientName: client.name,
+          clientId: client.id
+        }));
+      });
 
       const transactionArrays = await Promise.all(allTransactionsPromises);
       const flatTransactions = transactionArrays.flat();

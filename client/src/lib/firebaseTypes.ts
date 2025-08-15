@@ -57,6 +57,12 @@ export interface TransactionWithBalance extends Transaction {
   balanceAfter: number; // Calculated based on sort order
 }
 
+// Transaction with client information (for dashboard/reports)
+export interface TransactionWithClient extends Transaction {
+  clientName: string;
+  clientId: string;
+}
+
 export interface InsertTransaction {
   date: Date;
   particulars: string;
