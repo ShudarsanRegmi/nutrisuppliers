@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -227,24 +227,47 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                   </p>
                 </div>
               </div>
-              <h3 className="font-semibold text-lg text-gray-900 mb-2" data-testid={`text-name-${client.id}`}>
-                {client.name}
-              </h3>
+              <div className="mb-2">
+                <h3 className="font-semibold text-lg text-gray-900" data-testid={`text-name-${client.id}`}>
+                  {client.name}
+                </h3>
+                {client.companyName && (
+                  <div className="flex items-center text-sm text-gray-600 mt-1">
+                    <Building2 className="h-4 w-4 mr-1" />
+                    <span>{client.companyName}</span>
+                  </div>
+                )}
+                {client.contactPerson && (
+                  <div className="flex items-center text-sm text-gray-600 mt-1">
+                    <User className="h-4 w-4 mr-1" />
+                    <span>Contact: {client.contactPerson}</span>
+                  </div>
+                )}
+                {client.panNumber && (
+                  <div className="flex items-center text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded mt-2 w-fit">
+                    <FileText className="h-3 w-3 mr-1" />
+                    <span>PAN: {client.panNumber}</span>
+                  </div>
+                )}
+              </div>
               <div className="text-gray-600 text-sm mb-4 space-y-1">
                 {client.contact && (
-                  <p data-testid={`text-contact-${client.id}`}>
-                    📞 {client.contact}
-                  </p>
+                  <div className="flex items-center" data-testid={`text-contact-${client.id}`}>
+                    <Phone className="h-4 w-4 mr-2" />
+                    <span>{client.contact}</span>
+                  </div>
                 )}
                 {client.email && (
-                  <p data-testid={`text-email-${client.id}`}>
-                    ✉️ {client.email}
-                  </p>
+                  <div className="flex items-center" data-testid={`text-email-${client.id}`}>
+                    <Mail className="h-4 w-4 mr-2" />
+                    <span>{client.email}</span>
+                  </div>
                 )}
                 {client.address && (
-                  <p data-testid={`text-address-${client.id}`}>
-                    📍 {client.address}
-                  </p>
+                  <div className="flex items-center" data-testid={`text-address-${client.id}`}>
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <span>{client.address}</span>
+                  </div>
                 )}
                 {!client.contact && !client.email && !client.address && (
                   <p className="text-gray-400 italic">No contact details</p>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -617,24 +617,30 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                           {formatDate(transaction.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <div className="flex space-x-2 justify-center">
+                          <div className="flex space-x-1 justify-center">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditTransaction(transaction)}
-                              className="text-blue-600 hover:text-blue-700"
+                              className="text-blue-600 hover:text-blue-700 p-2"
                               data-testid={`button-edit-${transaction.id}`}
+                              title="Edit Transaction"
                             >
-                              Edit
+                              <Edit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => deleteTransactionMutation.mutate(transaction.id)}
-                              className="text-error hover:text-red-700"
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+                                  deleteTransactionMutation.mutate(transaction.id);
+                                }
+                              }}
+                              className="text-error hover:text-red-700 p-2"
                               data-testid={`button-delete-${transaction.id}`}
+                              title="Delete Transaction"
                             >
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>

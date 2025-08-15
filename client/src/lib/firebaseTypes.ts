@@ -15,10 +15,13 @@ export interface FirebaseUser {
 export interface Client {
   id: string;
   userId: string;
-  name: string;
+  name: string; // This will be the display name (company or individual)
+  companyName?: string | null; // Separate company name field
+  contactPerson?: string | null; // Contact person name
   contact?: string | null;
   email?: string | null;
   address?: string | null;
+  panNumber?: string | null; // PAN number for tax purposes
   createdAt: Date;
   updatedAt: Date;
   // Computed fields (calculated on client-side)
@@ -28,10 +31,13 @@ export interface Client {
 }
 
 export interface InsertClient {
-  name: string;
+  name: string; // Display name
+  companyName?: string | null;
+  contactPerson?: string | null;
   contact?: string | null;
   email?: string | null;
   address?: string | null;
+  panNumber?: string | null;
 }
 
 // Transaction types with proper data types
@@ -61,10 +67,13 @@ export interface InsertTransaction {
 
 // Validation schemas
 export const insertClientSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "Display name is required"),
+  companyName: z.string().nullish(),
+  contactPerson: z.string().nullish(),
   contact: z.string().nullish(),
   email: z.string().email().nullish().or(z.literal("")),
   address: z.string().nullish(),
+  panNumber: z.string().nullish(),
 });
 
 export const insertTransactionSchema = z.object({

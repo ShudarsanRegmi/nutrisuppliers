@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Edit, Trash2 } from "lucide-react";
+import { ChevronDown, Edit, Trash2, Phone, Mail, MapPin, Calendar, FileText, CreditCard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TransactionWithBalance } from "@/lib/firebaseTypes";
@@ -58,11 +58,12 @@ export default function TransactionCard({ transaction, onEdit, onDelete }: Trans
             >
               {isCredit ? '+' : '-'}{formatAmount(amount)}
             </p>
-            <p className="text-sm text-gray-500" data-testid={`text-balance-${transaction.id}`}>
-              Balance Due: {formatBalance(transaction.balanceAfter)}
+            <div className="flex items-center text-sm text-gray-500" data-testid={`text-balance-${transaction.id}`}>
+              <CreditCard className="h-4 w-4 mr-1" />
+              <span>Balance Due: {formatBalance(transaction.balanceAfter)}</span>
               {transaction.balanceAfter > 0 && <span className="text-red-600 ml-1">(Owes)</span>}
               {transaction.balanceAfter < 0 && <span className="text-green-600 ml-1">(Overpaid)</span>}
-            </p>
+            </div>
           </div>
         </div>
         
@@ -111,42 +112,55 @@ export default function TransactionCard({ transaction, onEdit, onDelete }: Trans
         <div className="border-t border-gray-100 bg-gray-50 p-4" data-testid={`details-${transaction.id}`}>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Transaction Type:</span>
+              <div className="flex items-center text-gray-500 mb-1">
+                <Building2 className="h-4 w-4 mr-1" />
+                <span>Transaction Type:</span>
+              </div>
               <p className={`font-medium ${isCredit ? 'text-success' : 'text-error'}`}>
                 {isCredit ? 'Credit' : 'Debit'}
               </p>
             </div>
             <div>
-              <span className="text-gray-500">Balance Due:</span>
+              <div className="flex items-center text-gray-500 mb-1">
+                <CreditCard className="h-4 w-4 mr-1" />
+                <span>Balance Due:</span>
+              </div>
               <p className="font-medium">{formatBalance(transaction.balanceAfter)}</p>
             </div>
             <div>
-              <span className="text-gray-500">Created:</span>
+              <div className="flex items-center text-gray-500 mb-1">
+                <Calendar className="h-4 w-4 mr-1" />
+                <span>Created:</span>
+              </div>
               <p className="font-medium">{formatDate(transaction.createdAt)}</p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-2 mt-4 pt-3 border-t border-gray-200">
+          <div className="flex space-x-2 mt-4 pt-3 border-t border-gray-200 justify-center">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onEdit(transaction)}
-              className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+              className="text-blue-600 border-blue-200 hover:bg-blue-50 p-2"
               data-testid={`button-edit-${transaction.id}`}
+              title="Edit Transaction"
             >
-              <Edit size={14} className="mr-1" />
-              Edit
+              <Edit size={16} />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onDelete(transaction.id)}
-              className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+                  onDelete(transaction.id);
+                }
+              }}
+              className="text-red-600 border-red-200 hover:bg-red-50 p-2"
               data-testid={`button-delete-${transaction.id}`}
+              title="Delete Transaction"
             >
-              <Trash2 size={14} className="mr-1" />
-              Delete
+              <Trash2 size={16} />
             </Button>
           </div>
         </div>
