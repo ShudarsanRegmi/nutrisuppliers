@@ -232,7 +232,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
               <span>Add Client</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader className="pb-4">
               <DialogTitle className="text-lg">Add New Client</DialogTitle>
               <DialogDescription>

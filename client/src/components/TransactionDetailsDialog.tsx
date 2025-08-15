@@ -73,7 +73,7 @@ export default function TransactionDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-4 pr-12">
           <DialogTitle className="flex items-center justify-between text-lg">
             <span>Transaction Details</span>

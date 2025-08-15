@@ -39,7 +39,7 @@ export default function ConfirmationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md p-3 sm:p-6 mx-2">
+      <DialogContent className="w-[95vw] sm:max-w-md">
         <DialogHeader className="pb-4">
           <div className="flex items-center space-x-3">
             {variant === "destructive" && (

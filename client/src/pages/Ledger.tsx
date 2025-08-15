@@ -598,7 +598,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                   Add First Transaction
                 </Button>
               </DialogTrigger>
-              <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+              <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pb-4">
                   <DialogTitle className="text-lg">Add Transaction</DialogTitle>
                   <DialogDescription>
@@ -836,7 +836,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
               <Plus size={24} />
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader className="pb-4">
               <DialogTitle className="text-lg">Add Transaction</DialogTitle>
               <DialogDescription>
@@ -865,7 +865,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                 Add Transaction
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+            <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader className="pb-4">
                 <DialogTitle className="text-lg">Add Transaction</DialogTitle>
                 <DialogDescription>
@@ -884,7 +884,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
 
       {/* Edit Transaction Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-lg">Edit Transaction</DialogTitle>
             <DialogDescription>
