@@ -37,7 +37,7 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
         <FormField
           control={form.control}
           name="name"
@@ -59,7 +59,7 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <FormField
             control={form.control}
             name="companyName"
@@ -105,7 +105,7 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <FormField
             control={form.control}
             name="contact"
@@ -198,9 +198,9 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
         />
         
         <div className="flex space-x-3 pt-4">
-          <Button 
-            type="submit" 
-            className="flex-1 bg-primary text-white hover:bg-primary-dark"
+          <Button
+            type="submit"
+            className="flex-1 h-12 bg-primary text-white hover:bg-primary-dark text-lg"
             disabled={isLoading}
             data-testid="button-submit-client"
           >

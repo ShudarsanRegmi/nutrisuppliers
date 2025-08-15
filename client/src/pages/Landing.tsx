@@ -40,13 +40,13 @@ export default function Landing() {
         );
         toast({
           title: "Account created successfully!",
-          description: "Welcome to Digital Ledger",
+          description: "Welcome to Nutri Suppliers",
         });
       } else {
         await signInWithEmail(formData.email, formData.password);
         toast({
           title: "Signed in successfully!",
-          description: "Welcome back to Digital Ledger",
+          description: "Welcome back to Nutri Suppliers",
         });
       }
     } catch (error: any) {
@@ -66,7 +66,7 @@ export default function Landing() {
       await signInWithGoogle();
       toast({
         title: "Signed in successfully!",
-        description: "Welcome to Digital Ledger",
+        description: "Welcome to Nutri Suppliers",
       });
     } catch (error: any) {
       toast({
@@ -86,8 +86,8 @@ export default function Landing() {
           <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
             <BookOpen className="text-white text-2xl" size={32} />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">Digital Ledger</CardTitle>
-          <p className="text-gray-600">Manage your business transactions</p>
+          <CardTitle className="text-2xl font-bold text-gray-900">Nutri Suppliers</CardTitle>
+          <p className="text-gray-600">Digital Ledger for Medical Supplies</p>
         </CardHeader>
 
         <CardContent className="space-y-6">

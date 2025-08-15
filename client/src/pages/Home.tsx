@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
+import Dashboard from "./Dashboard";
 import ClientManagement from "./ClientManagement";
 import Ledger from "./Ledger";
 import Reports from "./Reports";
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState<'clients' | 'ledger' | 'reports'>('clients');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'ledger' | 'reports'>('dashboard');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const handleClientSelect = (clientId: string | number) => {
@@ -16,6 +17,10 @@ export default function Home() {
     console.log("Home: Setting client ID to:", id);
     setSelectedClientId(id);
     setCurrentView('ledger');
+  };
+
+  const handleNavigate = (view: 'clients' | 'ledger' | 'reports') => {
+    setCurrentView(view);
   };
 
   const handleClientChange = (clientId: string | null) => {
@@ -34,11 +39,17 @@ export default function Home() {
   }, [currentView]);
 
   return (
-    <Layout 
-      currentView={currentView} 
+    <Layout
+      currentView={currentView}
       onViewChange={setCurrentView}
       selectedClientId={selectedClientId}
     >
+      {currentView === 'dashboard' && (
+        <Dashboard
+          onNavigate={handleNavigate}
+          onClientSelect={handleClientSelect}
+        />
+      )}
       {currentView === 'clients' && (
         <ClientManagement onClientSelect={handleClientSelect} />
       )}

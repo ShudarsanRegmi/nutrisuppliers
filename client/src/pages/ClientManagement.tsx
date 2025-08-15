@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText } from "lucide-react";
+import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText, MoreVertical, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -174,6 +174,12 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   };
 
   const handleClientClick = (client: Client) => {
+    // Navigate to ledger with selected client
+    onClientSelect(client.id);
+  };
+
+  const handleClientDetails = (client: Client, event: React.MouseEvent) => {
+    event.stopPropagation();
     setSelectedClient(client);
     setIsDetailsDialogOpen(true);
   };
@@ -216,14 +222,29 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900" data-testid="text-client-management-title">Client Management</h2>
-        <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-primary text-white hover:bg-primary-dark transition-colors flex items-center space-x-2"
-          data-testid="button-add-client"
-        >
-          <Plus size={16} />
-          <span>Add Client</span>
-        </Button>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-primary text-white hover:bg-primary-dark transition-colors flex items-center space-x-2"
+              data-testid="button-add-client"
+            >
+              <Plus size={16} />
+              <span>Add Client</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="text-lg">Add New Client</DialogTitle>
+              <DialogDescription>
+                Create a new client profile for your business.
+              </DialogDescription>
+            </DialogHeader>
+            <ClientForm
+              onSubmit={(data) => createClientMutation.mutate(data)}
+              isLoading={createClientMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {clients.length === 0 ? (
@@ -260,14 +281,23 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                     {getInitials(client.name)}
                   </span>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm text-gray-500">Balance Due</span>
-                  <p
-                    className={`font-bold text-lg ${(client.balance || 0) > 0 ? 'text-red-600' : (client.balance || 0) < 0 ? 'text-green-600' : 'text-gray-600'}`}
-                    data-testid={`text-balance-${client.id}`}
+                <div className="flex items-center space-x-3">
+                  <div className="text-right">
+                    <span className="text-sm text-gray-500">Balance Due</span>
+                    <p
+                      className={`font-bold text-lg ${(client.balance || 0) > 0 ? 'text-red-600' : (client.balance || 0) < 0 ? 'text-green-600' : 'text-gray-600'}`}
+                      data-testid={`text-balance-${client.id}`}
+                    >
+                      {formatBalance(client.balance || 0)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => handleClientDetails(client, e)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    title="View client details"
                   >
-                    {formatBalance(client.balance || 0)}
-                  </p>
+                    <MoreVertical className="h-5 w-5 text-gray-600" />
+                  </button>
                 </div>
               </div>
               <div className="mb-2">
@@ -316,28 +346,10 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                   <p className="text-gray-400 italic">No contact details</p>
                 )}
               </div>
-              <div className="flex justify-between items-center text-sm text-gray-500">
-                <div className="flex flex-col">
-                  <span data-testid={`text-transaction-count-${client.id}`}>
-                    {client.transactionCount || 0} transactions
-                  </span>
-                  <span data-testid={`text-last-activity-${client.id}`}>
-                    {client.lastActivity ? formatDate(client.lastActivity) : "No activity"}
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    cleanupBalancesMutation.mutate(client.id);
-                  }}
-                  disabled={cleanupBalancesMutation.isPending}
-                  className="text-xs"
-                  title="Remove old stored balance data"
-                >
-                  Cleanup
-                </Button>
+              <div className="flex justify-center items-center text-sm text-gray-500">
+                <span data-testid={`text-transaction-count-${client.id}`}>
+                  {client.transactionCount || 0} transactions
+                </span>
               </div>
             </div>
           ))}
@@ -346,22 +358,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
 
 
 
-      {/* Edit Client Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Client Details</DialogTitle>
-            <DialogDescription>
-              Update the client information.
-            </DialogDescription>
-          </DialogHeader>
-          <ClientForm
-            onSubmit={(data) => updateClientMutation.mutate(data)}
-            isLoading={updateClientMutation.isPending}
-            defaultValues={getEditDefaultValues()}
-          />
-        </DialogContent>
-      </Dialog>
+
 
       {/* Client Details Dialog */}
       <ClientDetailsDialog
@@ -369,7 +366,6 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
         onOpenChange={setIsDetailsDialogOpen}
         client={selectedClient}
         onEdit={handleEditClient}
-        onSelect={onClientSelect}
       />
     </div>
   );

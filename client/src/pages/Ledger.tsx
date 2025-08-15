@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown, Edit, Trash2, ChevronDown, ChevronUp, Calendar, ChevronLeft, ChevronRight, Phone, Mail, MapPin, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,6 +51,8 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithBalance | null>(null);
+  // UI states
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -438,100 +440,143 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Client Selection & Search */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-4">
-              <h2 className="text-2xl font-bold text-gray-900" data-testid="text-ledger-title">Transaction Ledger</h2>
-              <Select
-                value={selectedClientId || ""}
-                onValueChange={(value) => {
-                  console.log("Raw value from main dropdown:", value);
-                  if (value && value !== "") {
-                    console.log("Client changed via dropdown:", value);
-                    onClientSelect(value);
-                  }
-                }}
+      {/* Compact Header */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-lg font-semibold text-gray-900" data-testid="text-ledger-title">
+              Ledger
+            </h1>
+            <Select
+              value={selectedClientId || ""}
+              onValueChange={(value) => {
+                if (value && value !== "") {
+                  onClientSelect(value);
+                }
+              }}
+            >
+              <SelectTrigger className="w-40 h-8 text-sm" data-testid="select-client">
+                <SelectValue placeholder="Client" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((client: Client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Add Transaction Button - Desktop */}
+          {selectedClientId && (
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="hidden sm:flex">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+          )}
+        </div>
+
+        {/* Compact Search & Filters */}
+        <div className="space-y-2">
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <Input
+              placeholder="Search transactions..."
+              className="pl-10 h-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              data-testid="input-search-transactions"
+            />
+          </div>
+
+          {/* Filters row */}
+          <div className="flex items-center justify-between space-x-2">
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+                className="h-8 px-2"
               >
-                <SelectTrigger className="w-48" data-testid="select-client">
-                  <SelectValue placeholder="Select Client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client: Client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Search & Filters */}
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <Input
-                  placeholder="Search transactions..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  data-testid="input-search-transactions"
-                />
-              </div>
+                <Filter className="h-4 w-4" />
+                {isFiltersExpanded ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+              </Button>
+
+              {/* Quick filters */}
               <Select value={transactionType} onValueChange={setTransactionType}>
-                <SelectTrigger className="w-32" data-testid="select-transaction-type">
+                <SelectTrigger className="w-24 h-8 text-xs" data-testid="select-transaction-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="credit">Credit</SelectItem>
                   <SelectItem value="debit">Debit</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
 
-              {/* Sort Controls */}
-              <div className="flex space-x-2">
-                <Select value={sortField} onValueChange={(value: SortField) => setSortField(value)}>
-                  <SelectTrigger className="w-40" data-testid="select-sort-field">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Transaction Date</SelectItem>
-                    <SelectItem value="createdAt">Created Date</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                  className="px-3"
-                  data-testid="button-sort-order"
-                >
-                  {sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                </Button>
-              </div>
+            {/* Mobile Add Button */}
+            {selectedClientId && (
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="sm:hidden h-8">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+            )}
+          </div>
 
-              {/* Pagination Controls */}
-              <div className="flex space-x-2 items-center">
-                <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
-                  <SelectTrigger className="w-20" data-testid="select-page-size">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-gray-500">per page</span>
+          {/* Expandable advanced filters */}
+          {isFiltersExpanded && (
+            <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="flex space-x-1">
+                  <Select value={sortField} onValueChange={(value: SortField) => setSortField(value)}>
+                    <SelectTrigger className="h-8 text-xs" data-testid="select-sort-field">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date</SelectItem>
+                      <SelectItem value="createdAt">Created</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    className="px-2 h-8"
+                    data-testid="button-sort-order"
+                  >
+                    {sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                  </Button>
+                </div>
+
+                <div className="flex items-center space-x-1">
+                  <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
+                    <SelectTrigger className="w-16 h-8 text-xs" data-testid="select-page-size">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-gray-500">per page</span>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="space-y-4">
@@ -553,9 +598,9 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                   Add First Transaction
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add Transaction</DialogTitle>
+              <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+                <DialogHeader className="pb-4">
+                  <DialogTitle className="text-lg">Add Transaction</DialogTitle>
                   <DialogDescription>
                     Record a new transaction for this client.
                   </DialogDescription>
@@ -574,52 +619,48 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
           {/* Desktop Table View */}
           {!isMobile && (
             <Card className="overflow-hidden">
-              {/* Sort status for desktop */}
-              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-                <div className="flex items-center justify-between text-sm text-gray-600">
+              {/* Compact status bar */}
+              <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center justify-between text-xs text-gray-600">
                   <span>
-                    Showing {transactions.length} of {totalCount} transaction{totalCount !== 1 ? 's' : ''}
-                    {hasMore && <span className="text-blue-600 ml-1">({totalCount - pageSize} more)</span>}
+                    {transactions.length} of {totalCount} transactions
+                    {hasMore && <span className="text-blue-600 ml-1">(+{totalCount - pageSize} more)</span>}
                   </span>
                   <span>
-                    Sorted by {sortField === "date" ? "Transaction Date" : "Created Date"}
-                    ({sortOrder === "asc" ? "Oldest first" : "Newest first"})
+                    {sortField === "date" ? "By Date" : "By Created"} • {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
-                </div>
-                <div className="mt-1 text-xs text-gray-500">
-                  Balance Due calculated chronologically: Debit (+) = Product/Service given, Credit (-) = Payment received
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
                         <button
                           onClick={() => handleSort("date")}
-                          className="flex items-center space-x-1 hover:text-gray-700 transition-colors"
+                          className="flex items-center space-x-1 hover:text-gray-700"
                           data-testid="sort-date"
                         >
                           <span>Date</span>
                           {getSortIcon("date")}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Particulars</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill No</th>
-                      <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Debit</th>
-                      <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Credit</th>
-                      <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance Due</th>
-                      <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Particulars</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Bill</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Debit</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Credit</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Balance</th>
+                      <th className="px-3 py-2 text-center text-xs font-medium text-gray-500">
                         <button
                           onClick={() => handleSort("createdAt")}
-                          className="flex items-center space-x-1 hover:text-gray-700 transition-colors justify-center"
+                          className="flex items-center space-x-1 hover:text-gray-700 justify-center"
                           data-testid="sort-created"
                         >
                           <span>Created</span>
                           {getSortIcon("createdAt")}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 w-20">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -636,34 +677,34 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                           data-testid={`row-transaction-${transaction.id}`}
                           onClick={() => handleRowClick(transaction)}
                         >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-testid={`text-date-${transaction.id}`}>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900" data-testid={`text-date-${transaction.id}`}>
                           {formatDate(transaction.date)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900" data-testid={`text-particulars-${transaction.id}`}>
+                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs truncate" data-testid={`text-particulars-${transaction.id}`}>
                           {transaction.particulars}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-testid={`text-bill-${transaction.id}`}>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900" data-testid={`text-bill-${transaction.id}`}>
                           {transaction.billNo || "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600 text-right" data-testid={`text-debit-${transaction.id}`}>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-red-600 text-right" data-testid={`text-debit-${transaction.id}`}>
                           {formatAmount(transaction.debitAmount)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600 text-right" data-testid={`text-credit-${transaction.id}`}>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-green-600 text-right" data-testid={`text-credit-${transaction.id}`}>
                           {formatAmount(transaction.creditAmount)}
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${transaction.balanceAfter > 0 ? 'text-red-600' : transaction.balanceAfter < 0 ? 'text-green-600' : 'text-gray-600'}`} data-testid={`text-balance-${transaction.id}`}>
+                        <td className={`px-3 py-2 whitespace-nowrap text-sm font-medium text-right ${transaction.balanceAfter > 0 ? 'text-red-600' : transaction.balanceAfter < 0 ? 'text-green-600' : 'text-gray-600'}`} data-testid={`text-balance-${transaction.id}`}>
                           {formatBalance(transaction.balanceAfter)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-testid={`text-created-${transaction.id}`}>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 text-center" data-testid={`text-created-${transaction.id}`}>
                           {formatDate(transaction.createdAt)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-3 py-2 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex space-x-1 justify-center">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditTransaction(transaction)}
-                              className="text-blue-600 hover:text-blue-700 p-2"
+                              className="text-blue-600 hover:text-blue-700 p-1"
                               data-testid={`button-edit-${transaction.id}`}
                               title="Edit Transaction"
                             >
@@ -673,7 +714,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteTransaction(transaction.id)}
-                              className="text-error hover:text-red-700 p-2"
+                              className="text-error hover:text-red-700 p-1"
                               data-testid={`button-delete-${transaction.id}`}
                               title="Delete Transaction"
                             >
@@ -795,9 +836,9 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
               <Plus size={24} />
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add Transaction</DialogTitle>
+          <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="text-lg">Add Transaction</DialogTitle>
               <DialogDescription>
                 Record a new transaction for this client.
               </DialogDescription>
@@ -824,9 +865,9 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                 Add Transaction
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add Transaction</DialogTitle>
+            <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+              <DialogHeader className="pb-4">
+                <DialogTitle className="text-lg">Add Transaction</DialogTitle>
                 <DialogDescription>
                   Record a new transaction for this client.
                 </DialogDescription>
@@ -843,9 +884,9 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
 
       {/* Edit Transaction Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Transaction</DialogTitle>
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-lg">Edit Transaction</DialogTitle>
             <DialogDescription>
               Update the transaction details.
             </DialogDescription>

@@ -8,7 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Client } from "@/lib/firebaseTypes";
+import { Client, InsertClient } from "@/lib/firebaseTypes";
+import ClientForm from "./ClientForm";
+import { useState } from "react";
 
 interface ClientDetailsDialogProps {
   open: boolean;
@@ -16,6 +18,8 @@ interface ClientDetailsDialogProps {
   client: Client | null;
   onEdit: (client: Client) => void;
   onSelect?: (clientId: string) => void;
+  onUpdate?: (data: InsertClient) => void;
+  isUpdating?: boolean;
 }
 
 export default function ClientDetailsDialog({
@@ -24,7 +28,11 @@ export default function ClientDetailsDialog({
   client,
   onEdit,
   onSelect,
+  onUpdate,
+  isUpdating,
 }: ClientDetailsDialogProps) {
+  const [isEditMode, setIsEditMode] = useState(false);
+
   if (!client) return null;
 
   const formatBalance = (balance: number) => {
@@ -49,17 +57,17 @@ export default function ClientDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="flex items-center justify-between text-lg">
             <span>Client Details</span>
-            <Badge 
+            <Badge
               variant={
-                (client.balance || 0) > 0 ? "destructive" : 
+                (client.balance || 0) > 0 ? "destructive" :
                 (client.balance || 0) < 0 ? "default" : "secondary"
               }
             >
-              {(client.balance || 0) > 0 ? "Owes Money" : 
+              {(client.balance || 0) > 0 ? "Owes Money" :
                (client.balance || 0) < 0 ? "Overpaid" : "Settled"}
             </Badge>
           </DialogTitle>
@@ -195,29 +203,32 @@ export default function ClientDetailsDialog({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t space-y-2">
+          <div className="pt-4 border-t space-y-3">
             {onSelect && (
               <Button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   onSelect(client.id);
                   onOpenChange(false);
                 }}
-                className="w-full"
+                className="w-full h-12"
                 variant="default"
               >
                 Select Client for Ledger
               </Button>
             )}
             <Button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onEdit(client);
                 onOpenChange(false);
               }}
-              className="w-full"
+              className="w-full h-12 text-sm sm:text-base"
               variant="outline"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Client Details
+              <Edit className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Edit Client Details</span>
+              <span className="sm:hidden">Edit</span>
             </Button>
           </div>
         </div>

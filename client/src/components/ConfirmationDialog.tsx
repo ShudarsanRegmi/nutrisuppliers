@@ -39,21 +39,21 @@ export default function ConfirmationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center space-x-2">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md p-3 sm:p-6 mx-2">
+        <DialogHeader className="pb-4">
+          <div className="flex items-center space-x-3">
             {variant === "destructive" && (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
             )}
             <div>
-              <DialogTitle className={variant === "destructive" ? "text-red-900" : ""}>
+              <DialogTitle className={`text-lg ${variant === "destructive" ? "text-red-900" : ""}`}>
                 {title}
               </DialogTitle>
             </div>
           </div>
-          <DialogDescription className="text-left">
+          <DialogDescription className="text-left mt-2">
             {description}
           </DialogDescription>
         </DialogHeader>

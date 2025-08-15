@@ -73,11 +73,11 @@ export default function TransactionDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2">
+        <DialogHeader className="pb-4 pr-12">
+          <DialogTitle className="flex items-center justify-between text-lg">
             <span>Transaction Details</span>
-            <Badge 
+            <Badge
               variant={isCredit ? "default" : "destructive"}
               className={isCredit ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
             >
@@ -165,28 +165,32 @@ export default function TransactionDetailsDialog({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-2 pt-4 border-t">
+          <div className="flex space-x-3 pt-4 border-t">
             <Button
               variant="outline"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onEdit(transaction);
                 onOpenChange(false);
               }}
-              className="flex-1"
+              className="flex-1 h-12 text-sm sm:text-base"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Transaction
+              <Edit className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Edit Transaction</span>
+              <span className="sm:hidden">Edit</span>
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onDelete(transaction.id);
                 onOpenChange(false);
               }}
-              className="flex-1"
+              className="flex-1 h-12 text-sm sm:text-base"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Transaction
+              <Trash2 className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Delete Transaction</span>
+              <span className="sm:hidden">Delete</span>
             </Button>
           </div>
         </div>
