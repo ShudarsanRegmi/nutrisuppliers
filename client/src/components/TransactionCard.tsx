@@ -8,9 +8,10 @@ interface TransactionCardProps {
   transaction: TransactionWithBalance;
   onEdit: (transaction: TransactionWithBalance) => void;
   onDelete: (transactionId: string) => void;
+  onRowClick?: (transaction: TransactionWithBalance) => void;
 }
 
-export default function TransactionCard({ transaction, onEdit, onDelete }: TransactionCardProps) {
+export default function TransactionCard({ transaction, onEdit, onDelete, onRowClick }: TransactionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const formatAmount = (amount: number) => {
@@ -40,7 +41,11 @@ export default function TransactionCard({ transaction, onEdit, onDelete }: Trans
     : "bg-red-50 border-red-200";
 
   return (
-    <Card className={`overflow-hidden ${cardBgClass}`} data-testid={`card-transaction-${transaction.id}`}>
+    <Card
+      className={`overflow-hidden ${cardBgClass} cursor-pointer transition-all duration-200 hover:shadow-md`}
+      data-testid={`card-transaction-${transaction.id}`}
+      onClick={() => onRowClick?.(transaction)}
+    >
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
@@ -137,7 +142,7 @@ export default function TransactionCard({ transaction, onEdit, onDelete }: Trans
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-2 mt-4 pt-3 border-t border-gray-200 justify-center">
+          <div className="flex space-x-2 mt-4 pt-3 border-t border-gray-200 justify-center" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="outline"
               size="sm"
@@ -151,11 +156,7 @@ export default function TransactionCard({ transaction, onEdit, onDelete }: Trans
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
-                  onDelete(transaction.id);
-                }
-              }}
+              onClick={() => onDelete(transaction.id)}
               className="text-red-600 border-red-200 hover:bg-red-50 p-2"
               data-testid={`button-delete-${transaction.id}`}
               title="Delete Transaction"

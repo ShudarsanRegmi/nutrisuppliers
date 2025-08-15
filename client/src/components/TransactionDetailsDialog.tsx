@@ -1,0 +1,196 @@
+import { Calendar, FileText, CreditCard, Building2, Clock, Edit, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { TransactionWithBalance } from "@/lib/firebaseTypes";
+
+interface TransactionDetailsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  transaction: TransactionWithBalance | null;
+  onEdit: (transaction: TransactionWithBalance) => void;
+  onDelete: (transactionId: string) => void;
+}
+
+export default function TransactionDetailsDialog({
+  open,
+  onOpenChange,
+  transaction,
+  onEdit,
+  onDelete,
+}: TransactionDetailsDialogProps) {
+  if (!transaction) return null;
+
+  const isCredit = transaction.creditAmount > 0;
+  const amount = isCredit ? transaction.creditAmount : transaction.debitAmount;
+
+  const formatBalance = (balance: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'NPR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(Math.abs(balance));
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatDateTime = (date: Date) => {
+    return date.toLocaleString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      timeZoneName: 'short'
+    });
+  };
+
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    return formatDateTime(date);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Transaction Details</span>
+            <Badge 
+              variant={isCredit ? "default" : "destructive"}
+              className={isCredit ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+            >
+              {isCredit ? "Credit" : "Debit"}
+            </Badge>
+          </DialogTitle>
+          <DialogDescription>
+            Complete information about this transaction
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Amount Section */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CreditCard className="h-5 w-5 text-gray-600" />
+                <span className="font-medium text-gray-700">Amount</span>
+              </div>
+              <span className={`text-2xl font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
+                {formatBalance(amount)}
+              </span>
+            </div>
+          </div>
+
+          {/* Transaction Details */}
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <FileText className="h-5 w-5 text-gray-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-gray-700">Particulars</p>
+                <p className="text-gray-900">{transaction.particulars}</p>
+              </div>
+            </div>
+
+            {transaction.billNo && (
+              <div className="flex items-start space-x-3">
+                <Building2 className="h-5 w-5 text-gray-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-700">Bill Number</p>
+                  <p className="text-gray-900">{transaction.billNo}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-start space-x-3">
+              <Calendar className="h-5 w-5 text-gray-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-gray-700">Transaction Date</p>
+                <p className="text-gray-900">{formatDate(transaction.date)}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <Clock className="h-5 w-5 text-gray-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-gray-700">Created On</p>
+                <p className="text-gray-900">{formatDateTime(transaction.createdAt)}</p>
+                <p className="text-sm text-gray-500 mt-1">{formatTimeAgo(transaction.createdAt)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Balance Information */}
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CreditCard className="h-5 w-5 text-blue-600" />
+                <span className="font-medium text-blue-700">Balance Due After Transaction</span>
+              </div>
+              <div className="text-right">
+                <span className={`text-xl font-bold ${
+                  transaction.balanceAfter > 0 ? 'text-red-600' : 
+                  transaction.balanceAfter < 0 ? 'text-green-600' : 'text-gray-600'
+                }`}>
+                  {formatBalance(transaction.balanceAfter)}
+                </span>
+                <p className="text-sm text-gray-600">
+                  {transaction.balanceAfter > 0 && "(Client owes)"}
+                  {transaction.balanceAfter < 0 && "(Client overpaid)"}
+                  {transaction.balanceAfter === 0 && "(Settled)"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                onEdit(transaction);
+                onOpenChange(false);
+              }}
+              className="flex-1"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Transaction
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onDelete(transaction.id);
+                onOpenChange(false);
+              }}
+              className="flex-1"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Transaction
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -11,6 +11,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionCard from "@/components/TransactionCard";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
+import TransactionDetailsDialog from "@/components/TransactionDetailsDialog";
 import {
   getClients,
   getTransactions,
@@ -44,6 +46,11 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
   // Pagination state
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  // Dialog states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithBalance | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -286,6 +293,35 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
   const handleEditTransaction = (transaction: TransactionWithBalance) => {
     setEditingTransaction(transaction);
     setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteTransaction = (transactionId: string) => {
+    setDeletingTransactionId(transactionId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteTransaction = () => {
+    if (deletingTransactionId) {
+      deleteTransactionMutation.mutate(deletingTransactionId);
+      setDeletingTransactionId(null);
+    }
+  };
+
+  const handleRowClick = (transaction: TransactionWithBalance) => {
+    setSelectedTransaction(transaction);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleDetailsEdit = (transaction: TransactionWithBalance) => {
+    setSelectedTransaction(null);
+    setIsDetailsDialogOpen(false);
+    handleEditTransaction(transaction);
+  };
+
+  const handleDetailsDelete = (transactionId: string) => {
+    setSelectedTransaction(null);
+    setIsDetailsDialogOpen(false);
+    handleDeleteTransaction(transactionId);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
@@ -594,7 +630,12 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                         : "bg-red-50 hover:bg-red-100";
 
                       return (
-                        <tr key={transaction.id} className={`${rowBgClass}`} data-testid={`row-transaction-${transaction.id}`}>
+                        <tr
+                          key={transaction.id}
+                          className={`${rowBgClass} cursor-pointer transition-colors`}
+                          data-testid={`row-transaction-${transaction.id}`}
+                          onClick={() => handleRowClick(transaction)}
+                        >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-testid={`text-date-${transaction.id}`}>
                           {formatDate(transaction.date)}
                         </td>
@@ -616,7 +657,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" data-testid={`text-created-${transaction.id}`}>
                           {formatDate(transaction.createdAt)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex space-x-1 justify-center">
                             <Button
                               variant="ghost"
@@ -631,11 +672,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
-                                  deleteTransactionMutation.mutate(transaction.id);
-                                }
-                              }}
+                              onClick={() => handleDeleteTransaction(transaction.id)}
                               className="text-error hover:text-red-700 p-2"
                               data-testid={`button-delete-${transaction.id}`}
                               title="Delete Transaction"
@@ -683,7 +720,8 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                   key={transaction.id}
                   transaction={transaction}
                   onEdit={handleEditTransaction}
-                  onDelete={() => deleteTransactionMutation.mutate(transaction.id)}
+                  onDelete={() => handleDeleteTransaction(transaction.id)}
+                  onRowClick={handleRowClick}
                 />
               ))}
             </div>
@@ -821,6 +859,28 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
           />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Delete Transaction"
+        description="Are you sure you want to delete this transaction? This action cannot be undone and will permanently remove the transaction from your records."
+        confirmText="Delete Transaction"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteTransaction}
+        variant="destructive"
+        isLoading={deleteTransactionMutation.isPending}
+      />
+
+      {/* Transaction Details Dialog */}
+      <TransactionDetailsDialog
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        transaction={selectedTransaction}
+        onEdit={handleDetailsEdit}
+        onDelete={handleDetailsDelete}
+      />
     </div>
   );
 }
