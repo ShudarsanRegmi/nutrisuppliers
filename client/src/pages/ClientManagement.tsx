@@ -10,7 +10,7 @@ import {
   getClients,
   createClient,
   getClientBalance,
-  getTransactions,
+  getAllTransactions,
   removeStoredBalances
 } from "@/lib/firebaseDb";
 import { Client, InsertClient } from "@/lib/firebaseTypes";
@@ -42,12 +42,12 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
       const clientsWithStats = await Promise.all(
         clientsData.map(async (client) => {
           const balance = await getClientBalance(user.id, client.id);
-          const transactions = await getTransactions(user.id, client.id);
+          const transactions = await getAllTransactions(user.id, client.id, "createdAt", "desc");
           return {
             ...client,
             balance,
             transactionCount: transactions.length,
-            lastActivity: transactions.length > 0 ? transactions[0].date : client.createdAt,
+            lastActivity: transactions.length > 0 ? transactions[0].createdAt : client.createdAt,
           };
         })
       );
@@ -63,7 +63,15 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
       return await createClient(user.id, clientData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clients", user?.id] });
+      // Invalidate all client-related queries
+      queryClient.invalidateQueries({
+        queryKey: ["clients"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clientBalance"],
+        exact: false
+      });
       setIsAddDialogOpen(false);
       toast({
         title: "Success",
@@ -197,7 +205,10 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
             <div
               key={client.id}
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover cursor-pointer"
-              onClick={() => onClientSelect(client.id)}
+              onClick={() => {
+                console.log("Client selected from card:", client.id, "type:", typeof client.id);
+                onClientSelect(client.id);
+              }}
               data-testid={`card-client-${client.id}`}
             >
               <div className="flex items-center justify-between mb-4">

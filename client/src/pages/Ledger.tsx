@@ -49,23 +49,50 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
-  const { data: clients = [] } = useQuery<Client[]>({
+  // Reset pagination and filters when client changes
+  useEffect(() => {
+    if (selectedClientId) {
+      console.log("Client changed to:", selectedClientId);
+      setPageSize(10);
+      setCurrentPage(1);
+      setSearchTerm("");
+      setTransactionType("all");
+      setStartDate("");
+      setEndDate("");
+      // Keep sort settings as user preference
+
+      // Force invalidate queries for the new client
+      queryClient.invalidateQueries({
+        queryKey: ["transactions"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["allTransactions"],
+        exact: false
+      });
+    }
+  }, [selectedClientId, queryClient]);
+
+  const { data: clients = [], isLoading: clientsLoading, error: clientsError } = useQuery<Client[]>({
     queryKey: ["clients", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       return await getClients(user.id);
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 
   // Get paginated transactions
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ["transactions", user?.id, selectedClientId, {
+    queryKey: ["transactions", "paginated", user?.id, selectedClientId, {
       searchTerm, transactionType, startDate, endDate, pageSize, sortField, sortOrder
     }],
     queryFn: async () => {
       if (!user?.id || !selectedClientId) return { transactions: [], totalCount: 0, hasMore: false };
 
+      console.log("Fetching paginated transactions for client:", selectedClientId);
       return await getTransactions(user.id, selectedClientId, {
         searchTerm: searchTerm || undefined,
         transactionType: transactionType as "all" | "debit" | "credit",
@@ -77,16 +104,19 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
       });
     },
     enabled: !!user?.id && !!selectedClientId,
+    staleTime: 0, // Always refetch when client changes
   });
 
   // Get all transactions for balance calculation
   const { data: allTransactions = [] } = useQuery<Transaction[]>({
-    queryKey: ["allTransactions", user?.id, selectedClientId],
+    queryKey: ["transactions", "all", user?.id, selectedClientId, sortField, sortOrder],
     queryFn: async () => {
       if (!user?.id || !selectedClientId) return [];
+      console.log("Fetching all transactions for balance calculation, client:", selectedClientId);
       return await getAllTransactions(user.id, selectedClientId, sortField, sortOrder);
     },
     enabled: !!user?.id && !!selectedClientId,
+    staleTime: 0, // Always refetch when client changes
   });
 
   // Calculate balances on-the-fly based on current sort order
@@ -105,14 +135,21 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
       return await createTransaction(user.id, selectedClientId, transactionData);
     },
     onSuccess: () => {
-      // Invalidate all transaction queries for this user and client
+      // Invalidate all related queries
       queryClient.invalidateQueries({
-        queryKey: ["transactions", user?.id, selectedClientId],
+        queryKey: ["transactions"],
         exact: false
       });
-      // Invalidate client queries to update balances
       queryClient.invalidateQueries({
-        queryKey: ["clients", user?.id],
+        queryKey: ["allTransactions"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clients"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clientBalance"],
         exact: false
       });
       setIsAddDialogOpen(false);
@@ -139,14 +176,21 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
       return await updateTransaction(user.id, selectedClientId, editingTransaction.id, transactionData);
     },
     onSuccess: () => {
-      // Invalidate all transaction queries for this user and client
+      // Invalidate all related queries
       queryClient.invalidateQueries({
-        queryKey: ["transactions", user?.id, selectedClientId],
+        queryKey: ["transactions"],
         exact: false
       });
-      // Invalidate client queries to update balances
       queryClient.invalidateQueries({
-        queryKey: ["clients", user?.id],
+        queryKey: ["allTransactions"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clients"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clientBalance"],
         exact: false
       });
       setIsEditDialogOpen(false);
@@ -171,8 +215,23 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
       return await deleteTransaction(user.id, selectedClientId, transactionId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions", user?.id, selectedClientId] });
-      queryClient.invalidateQueries({ queryKey: ["clients", user?.id] });
+      // Invalidate all related queries
+      queryClient.invalidateQueries({
+        queryKey: ["transactions"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["allTransactions"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clients"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clientBalance"],
+        exact: false
+      });
       toast({
         title: "Success",
         description: "Transaction deleted successfully",
@@ -249,13 +308,70 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
     setCurrentPage(1);
   };
 
-  if (!selectedClientId) {
+  // Show loading state while clients are loading
+  if (clientsLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Card>
           <CardContent className="pt-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">Select a Client</h2>
-            <p className="text-gray-600">Choose a client to view their transaction ledger</p>
+            <div className="animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state if clients failed to load
+  if (clientsError) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <h2 className="text-xl font-semibold mb-2 text-red-600">Error Loading Clients</h2>
+            <p className="text-gray-600">Please refresh the page to try again.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!selectedClientId) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold mb-2">Select a Client</h2>
+              <p className="text-gray-600 mb-4">Choose a client to view their transaction ledger</p>
+            </div>
+
+            {/* Client Selection */}
+            <div className="flex justify-center">
+              <Select
+                value=""
+                onValueChange={(value) => {
+                  console.log("Raw value from initial dropdown:", value);
+                  if (value && value !== "") {
+                    console.log("Client selected from initial dropdown:", value);
+                    onClientSelect(value);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-64" data-testid="select-client-initial">
+                  <SelectValue placeholder="Select a Client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client: Client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -263,6 +379,26 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
   }
 
   const selectedClient = clients.find((c: Client) => c.id === selectedClientId);
+
+  // If selectedClientId is provided but client not found, show error
+  if (selectedClientId && !selectedClient) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <h2 className="text-xl font-semibold mb-2 text-red-600">Client Not Found</h2>
+            <p className="text-gray-600 mb-4">The selected client could not be found.</p>
+            <Button onClick={() => {
+              console.log("Back to client selection clicked");
+              onClientSelect(null);
+            }} variant="outline">
+              Back to Client Selection
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -272,16 +408,22 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
           <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
             <div className="flex items-center space-x-4">
               <h2 className="text-2xl font-bold text-gray-900" data-testid="text-ledger-title">Transaction Ledger</h2>
-              <Select 
-                value={selectedClientId?.toString() || ""} 
-                onValueChange={(value) => onClientSelect(parseInt(value))}
+              <Select
+                value={selectedClientId || ""}
+                onValueChange={(value) => {
+                  console.log("Raw value from main dropdown:", value);
+                  if (value && value !== "") {
+                    console.log("Client changed via dropdown:", value);
+                    onClientSelect(value);
+                  }
+                }}
               >
                 <SelectTrigger className="w-48" data-testid="select-client">
                   <SelectValue placeholder="Select Client" />
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client: Client) => (
-                    <SelectItem key={client.id} value={client.id.toString()}>
+                    <SelectItem key={client.id} value={client.id}>
                       {client.name}
                     </SelectItem>
                   ))}
