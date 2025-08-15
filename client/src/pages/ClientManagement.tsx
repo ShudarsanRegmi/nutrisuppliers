@@ -6,9 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ClientForm from "@/components/ClientForm";
+import ClientDetailsDialog from "@/components/ClientDetailsDialog";
 import {
   getClients,
   createClient,
+  updateClient,
   getClientBalance,
   getAllTransactions,
   removeStoredBalances
@@ -27,6 +29,10 @@ interface ClientManagementProps {
 
 export default function ClientManagement({ onClientSelect }: ClientManagementProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -87,6 +93,37 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     },
   });
 
+  const updateClientMutation = useMutation({
+    mutationFn: async (clientData: InsertClient) => {
+      if (!user?.id || !editingClient) throw new Error("User not authenticated or no client selected");
+      return await updateClient(user.id, editingClient.id, clientData);
+    },
+    onSuccess: () => {
+      // Invalidate all client-related queries
+      queryClient.invalidateQueries({
+        queryKey: ["clients"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clientBalance"],
+        exact: false
+      });
+      setIsEditDialogOpen(false);
+      setEditingClient(null);
+      toast({
+        title: "Success",
+        description: "Client updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update client",
+        variant: "destructive",
+      });
+    },
+  });
+
   const cleanupBalancesMutation = useMutation({
     mutationFn: async (clientId: string) => {
       if (!user?.id) throw new Error("User not authenticated");
@@ -136,6 +173,30 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     return `${Math.ceil(diffDays / 30)} month${Math.ceil(diffDays / 30) > 1 ? 's' : ''} ago`;
   };
 
+  const handleClientClick = (client: Client) => {
+    setSelectedClient(client);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleEditClient = (client: Client) => {
+    setEditingClient(client);
+    setIsEditDialogOpen(true);
+  };
+
+  const getEditDefaultValues = () => {
+    if (!editingClient) return {};
+
+    return {
+      name: editingClient.name,
+      companyName: editingClient.companyName || "",
+      contactPerson: editingClient.contactPerson || "",
+      contact: editingClient.contact || "",
+      email: editingClient.email || "",
+      address: editingClient.address || "",
+      panNumber: editingClient.panNumber || "",
+    };
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -155,29 +216,14 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900" data-testid="text-client-management-title">Client Management</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              className="bg-primary text-white hover:bg-primary-dark transition-colors flex items-center space-x-2"
-              data-testid="button-add-client"
-            >
-              <Plus size={16} />
-              <span>Add Client</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Client</DialogTitle>
-              <DialogDescription>
-                Add a new client to your digital ledger. Fill in the client details below.
-              </DialogDescription>
-            </DialogHeader>
-            <ClientForm 
-              onSubmit={(data) => createClientMutation.mutate(data)}
-              isLoading={createClientMutation.isPending}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="bg-primary text-white hover:bg-primary-dark transition-colors flex items-center space-x-2"
+          data-testid="button-add-client"
+        >
+          <Plus size={16} />
+          <span>Add Client</span>
+        </Button>
       </div>
 
       {clients.length === 0 ? (
@@ -205,10 +251,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
             <div
               key={client.id}
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 card-hover cursor-pointer"
-              onClick={() => {
-                console.log("Client selected from card:", client.id, "type:", typeof client.id);
-                onClientSelect(client.id);
-              }}
+              onClick={() => handleClientClick(client)}
               data-testid={`card-client-${client.id}`}
             >
               <div className="flex items-center justify-between mb-4">
@@ -300,6 +343,34 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
           ))}
         </div>
       )}
+
+
+
+      {/* Edit Client Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Client Details</DialogTitle>
+            <DialogDescription>
+              Update the client information.
+            </DialogDescription>
+          </DialogHeader>
+          <ClientForm
+            onSubmit={(data) => updateClientMutation.mutate(data)}
+            isLoading={updateClientMutation.isPending}
+            defaultValues={getEditDefaultValues()}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Details Dialog */}
+      <ClientDetailsDialog
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        client={selectedClient}
+        onEdit={handleEditClient}
+        onSelect={onClientSelect}
+      />
     </div>
   );
 }

@@ -110,14 +110,14 @@ export const getClients = async (userId: string): Promise<Client[]> => {
 export const createClient = async (userId: string, clientData: InsertClient): Promise<Client> => {
   const clientsRef = getClientsCollection(userId);
   const now = new Date();
-  
+
   const docRef = await addDoc(clientsRef, {
     ...clientData,
     userId,
     createdAt: Timestamp.fromDate(now),
     updatedAt: Timestamp.fromDate(now),
   });
-  
+
   return {
     id: docRef.id,
     userId,
@@ -127,12 +127,51 @@ export const createClient = async (userId: string, clientData: InsertClient): Pr
   };
 };
 
-export const updateClient = async (userId: string, clientId: string, clientData: Partial<InsertClient>): Promise<void> => {
-  const clientRef = doc(getClientsCollection(userId), clientId);
-  await updateDoc(clientRef, {
-    ...clientData,
-    updatedAt: Timestamp.fromDate(new Date()),
-  });
+
+
+export const updateClient = async (
+  userId: string,
+  clientId: string,
+  clientData: Partial<InsertClient>
+): Promise<Client> => {
+  try {
+    console.log("Updating client:", clientId, "with data:", clientData);
+
+    const clientRef = doc(getClientsCollection(userId), clientId);
+    const now = new Date();
+
+    const updateData = {
+      ...clientData,
+      updatedAt: Timestamp.fromDate(now),
+    };
+
+    await updateDoc(clientRef, updateData);
+
+    // Get the updated client
+    const updatedDoc = await getDoc(clientRef);
+    const data = updatedDoc.data();
+
+    if (!data) {
+      throw new Error("Client not found after update");
+    }
+
+    return {
+      id: clientId,
+      userId: data.userId,
+      name: data.name,
+      companyName: data.companyName || null,
+      contactPerson: data.contactPerson || null,
+      contact: data.contact || null,
+      email: data.email || null,
+      address: data.address || null,
+      panNumber: data.panNumber || null,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt),
+    };
+  } catch (error) {
+    console.error("Error updating client:", error);
+    throw error;
+  }
 };
 
 export const deleteClient = async (userId: string, clientId: string): Promise<void> => {
