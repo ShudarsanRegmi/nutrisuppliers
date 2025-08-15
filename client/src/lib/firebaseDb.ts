@@ -9,11 +9,16 @@ import {
   setDoc,
   query,
   orderBy,
+  limit,
+  startAfter,
+  endBefore,
+  limitToLast,
   Timestamp,
   writeBatch,
   onSnapshot,
   QueryConstraint,
   deleteField,
+  DocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import {
@@ -148,7 +153,7 @@ export const deleteClient = async (userId: string, clientId: string): Promise<vo
   await batch.commit();
 };
 
-// Transaction operations
+// Transaction operations with pagination support
 export const getTransactions = async (
   userId: string,
   clientId: string,
@@ -157,11 +162,30 @@ export const getTransactions = async (
     transactionType?: "all" | "debit" | "credit";
     startDate?: string;
     endDate?: string;
+    pageSize?: number;
+    sortField?: "date" | "createdAt";
+    sortOrder?: "asc" | "desc";
   }
-): Promise<Transaction[]> => {
+): Promise<{
+  transactions: Transaction[];
+  totalCount: number;
+  hasMore: boolean;
+}> => {
   const transactionsRef = getTransactionsCollection(userId, clientId);
+
+  // Default values
+  const pageSize = filters?.pageSize || 10;
+  const sortField = filters?.sortField || "createdAt";
+  const sortOrder = filters?.sortOrder || "asc";
+
+  // First, get total count for pagination info
+  const totalSnapshot = await getDocs(query(transactionsRef));
+  const totalCount = totalSnapshot.size;
+
+  // Build query constraints
   const constraints: QueryConstraint[] = [
-    orderBy("date", "desc"),
+    orderBy(sortField, sortOrder),
+    limit(pageSize),
   ];
 
   const querySnapshot = await getDocs(query(transactionsRef, ...constraints));
@@ -209,7 +233,39 @@ export const getTransactions = async (
     }
   }
 
-  return transactions;
+  return {
+    transactions,
+    totalCount,
+    hasMore: querySnapshot.docs.length === pageSize && totalCount > pageSize,
+  };
+};
+
+// Get all transactions without pagination (for balance calculations)
+export const getAllTransactions = async (
+  userId: string,
+  clientId: string,
+  sortField: "date" | "createdAt" = "createdAt",
+  sortOrder: "asc" | "desc" = "asc"
+): Promise<Transaction[]> => {
+  const transactionsRef = getTransactionsCollection(userId, clientId);
+  const constraints: QueryConstraint[] = [
+    orderBy(sortField, sortOrder),
+  ];
+
+  const querySnapshot = await getDocs(query(transactionsRef, ...constraints));
+
+  return querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      date: convertTimestamp(data.date),
+      particulars: data.particulars,
+      billNo: data.billNo || null,
+      debitAmount: typeof data.debitAmount === 'number' ? data.debitAmount : parseFloat(data.debitAmount || "0"),
+      creditAmount: typeof data.creditAmount === 'number' ? data.creditAmount : parseFloat(data.creditAmount || "0"),
+      createdAt: convertTimestamp(data.createdAt),
+    } as Transaction;
+  });
 };
 
 // Calculate running balances for transactions based on sort order
@@ -354,12 +410,14 @@ export const deleteTransaction = async (userId: string, clientId: string, transa
 
 // Balance calculation - calculates current balance based on all transactions
 export const getClientBalance = async (userId: string, clientId: string): Promise<number> => {
-  const transactions = await getTransactions(userId, clientId);
+  // Get all transactions for balance calculation (no pagination)
+  const transactions = await getAllTransactions(userId, clientId);
+
   if (transactions.length === 0) return 0;
 
   // Calculate total balance: sum of all debits minus sum of all credits
-  const totalDebit = transactions.reduce((sum, t) => sum + t.debitAmount, 0);
-  const totalCredit = transactions.reduce((sum, t) => sum + t.creditAmount, 0);
+  const totalDebit = transactions.reduce((sum: number, t: Transaction) => sum + t.debitAmount, 0);
+  const totalCredit = transactions.reduce((sum: number, t: Transaction) => sum + t.creditAmount, 0);
 
   return totalDebit - totalCredit;
 };
@@ -382,12 +440,13 @@ export const getMonthlyTotals = async (
 
   // Get transactions for each client and aggregate
   for (const client of clients) {
-    const transactions = await getTransactions(userId, client.id, {
+    const result = await getTransactions(userId, client.id, {
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
+      pageSize: 1000, // Large page size to get all transactions for the month
     });
 
-    transactions.forEach(transaction => {
+    result.transactions.forEach((transaction: Transaction) => {
       totalDebit += transaction.debitAmount;
       totalCredit += transaction.creditAmount;
       transactionCount++;

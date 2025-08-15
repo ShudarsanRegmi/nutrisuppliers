@@ -14,6 +14,7 @@ import TransactionCard from "@/components/TransactionCard";
 import {
   getClients,
   getTransactions,
+  getAllTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,
@@ -37,8 +38,12 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
   const [transactionType, setTransactionType] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [sortField, setSortField] = useState<SortField>("date");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  // Default settings: Created Date, Oldest first
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  // Pagination state
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -53,27 +58,46 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
     enabled: !!user?.id,
   });
 
-  const { data: rawTransactions = [], isLoading } = useQuery<Transaction[]>({
-    queryKey: ["transactions", user?.id, selectedClientId, { searchTerm, transactionType, startDate, endDate }],
+  // Get paginated transactions
+  const { data: paginatedData, isLoading } = useQuery({
+    queryKey: ["transactions", user?.id, selectedClientId, {
+      searchTerm, transactionType, startDate, endDate, pageSize, sortField, sortOrder
+    }],
     queryFn: async () => {
-      if (!user?.id || !selectedClientId) return [];
+      if (!user?.id || !selectedClientId) return { transactions: [], totalCount: 0, hasMore: false };
 
       return await getTransactions(user.id, selectedClientId, {
         searchTerm: searchTerm || undefined,
         transactionType: transactionType as "all" | "debit" | "credit",
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        pageSize,
+        sortField,
+        sortOrder,
       });
+    },
+    enabled: !!user?.id && !!selectedClientId,
+  });
+
+  // Get all transactions for balance calculation
+  const { data: allTransactions = [] } = useQuery<Transaction[]>({
+    queryKey: ["allTransactions", user?.id, selectedClientId],
+    queryFn: async () => {
+      if (!user?.id || !selectedClientId) return [];
+      return await getAllTransactions(user.id, selectedClientId, sortField, sortOrder);
     },
     enabled: !!user?.id && !!selectedClientId,
   });
 
   // Calculate balances on-the-fly based on current sort order
   const transactions: TransactionWithBalance[] = calculateTransactionBalances(
-    rawTransactions,
+    paginatedData?.transactions || [],
     sortField,
     sortOrder
   );
+
+  const totalCount = paginatedData?.totalCount || 0;
+  const hasMore = paginatedData?.hasMore || false;
 
   const createTransactionMutation = useMutation({
     mutationFn: async (transactionData: InsertTransaction) => {
@@ -205,6 +229,26 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
     setIsEditDialogOpen(true);
   };
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore) {
+      setPageSize(prev => prev + 10); // Load 10 more records
+    }
+  };
+
+  const handleShowAll = () => {
+    setPageSize(totalCount); // Show all records
+  };
+
+  const handleReset = () => {
+    setPageSize(10); // Reset to default
+    setCurrentPage(1);
+  };
+
   if (!selectedClientId) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -289,6 +333,23 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                   {sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
                 </Button>
               </div>
+
+              {/* Pagination Controls */}
+              <div className="flex space-x-2 items-center">
+                <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
+                  <SelectTrigger className="w-20" data-testid="select-page-size">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-gray-500">per page</span>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -339,7 +400,8 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
               <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <span>
-                    {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} found
+                    Showing {transactions.length} of {totalCount} transaction{totalCount !== 1 ? 's' : ''}
+                    {hasMore && <span className="text-blue-600 ml-1">({totalCount - pageSize} more)</span>}
                   </span>
                   <span>
                     Sorted by {sortField === "date" ? "Transaction Date" : "Created Date"}
@@ -446,20 +508,26 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
           {/* Mobile Card View */}
           {isMobile && (
             <div className="space-y-4">
-              {/* Sort indicator for mobile */}
-              <div className="flex items-center justify-between text-sm text-gray-500 px-2">
-                <span>
+              {/* Sort and pagination indicator for mobile */}
+              <div className="space-y-2 px-2">
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>
+                    Showing {transactions.length} of {totalCount}
+                    {hasMore && <span className="text-blue-600 ml-1">({totalCount - pageSize} more)</span>}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    className="px-2"
+                  >
+                    {sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <div className="text-xs text-gray-400">
                   Sorted by {sortField === "date" ? "Transaction Date" : "Created Date"}
                   ({sortOrder === "asc" ? "Oldest first" : "Newest first"})
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                  className="px-2"
-                >
-                  {sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                </Button>
+                </div>
               </div>
 
               {transactions.map((transaction: TransactionWithBalance) => (
@@ -473,6 +541,61 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
             </div>
           )}
         </>
+      )}
+
+      {/* Pagination Controls */}
+      {selectedClientId && transactions.length > 0 && (
+        <Card className="mt-4">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+              {/* Pagination Info */}
+              <div className="text-sm text-gray-600">
+                Showing {transactions.length} of {totalCount} transactions
+                {hasMore && (
+                  <span className="ml-2 text-blue-600">
+                    ({totalCount - pageSize} more available)
+                  </span>
+                )}
+              </div>
+
+              {/* Pagination Actions */}
+              <div className="flex space-x-2">
+                {hasMore && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLoadMore}
+                    data-testid="button-load-more"
+                  >
+                    Load More (+10)
+                  </Button>
+                )}
+
+                {pageSize < totalCount && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShowAll}
+                    data-testid="button-show-all"
+                  >
+                    Show All ({totalCount})
+                  </Button>
+                )}
+
+                {pageSize > 10 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReset}
+                    data-testid="button-reset-pagination"
+                  >
+                    Reset (10)
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Floating Action Button (Mobile) */}
