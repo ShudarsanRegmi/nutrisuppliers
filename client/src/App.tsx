@@ -8,6 +8,9 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import LoadingScreen from "@/components/LoadingScreen";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
+import { PWAUpdatePrompt } from "@/components/PWAInstallPrompt";
+import { PWAStatus } from "@/components/PWAStatus";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -36,6 +39,9 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <PWAInstallButton />
+        <PWAUpdatePrompt />
+        <PWAStatus />
       </TooltipProvider>
     </QueryClientProvider>
   );

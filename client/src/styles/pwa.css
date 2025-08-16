@@ -1,0 +1,304 @@
+/* PWA-specific styles for NutriSuppliers */
+
+/* Prevent text selection on mobile for better app-like feel */
+@media (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Allow text selection for input fields */
+  input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+}
+
+/* iOS PWA specific styles */
+@supports (-webkit-touch-callout: none) {
+  .ios-pwa-safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Hide scrollbars in standalone mode for cleaner look */
+@media (display-mode: standalone) {
+  ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+  }
+  
+  /* For Firefox */
+  * {
+    scrollbar-width: none;
+  }
+}
+
+/* PWA splash screen styles */
+.pwa-splash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: white;
+}
+
+.pwa-splash-logo {
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.pwa-splash-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.pwa-splash-subtitle {
+  font-size: 16px;
+  opacity: 0.9;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.pwa-splash-loader {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* PWA install button styles */
+.pwa-install-button {
+  background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.pwa-install-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.pwa-install-button:active {
+  transform: translateY(0);
+}
+
+/* Offline indicator styles */
+.offline-indicator {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #EF4444;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+.online-indicator {
+  background: #10B981;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* PWA navigation styles */
+@media (display-mode: standalone) {
+  .pwa-navigation {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #E5E7EB;
+    padding: 8px 0;
+    z-index: 50;
+  }
+  
+  .pwa-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 12px;
+    color: #6B7280;
+    text-decoration: none;
+    font-size: 12px;
+    transition: color 0.2s ease;
+  }
+  
+  .pwa-nav-item.active {
+    color: #3B82F6;
+  }
+  
+  .pwa-nav-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+  }
+}
+
+/* PWA card styles for better touch interaction */
+.pwa-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 8px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.pwa-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* PWA form styles */
+.pwa-form-group {
+  margin-bottom: 20px;
+}
+
+.pwa-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 16px; /* Prevents zoom on iOS */
+  transition: border-color 0.2s ease;
+}
+
+.pwa-input:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* PWA button styles */
+.pwa-button {
+  width: 100%;
+  padding: 14px 20px;
+  background: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pwa-button:hover {
+  background: #2563EB;
+}
+
+.pwa-button:active {
+  transform: translateY(1px);
+}
+
+.pwa-button:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* PWA loading states */
+.pwa-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3B82F6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* PWA toast notifications */
+.pwa-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* PWA responsive grid */
+.pwa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+@media (max-width: 640px) {
+  .pwa-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+}

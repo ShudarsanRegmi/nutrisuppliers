@@ -5,6 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { signOutUser } from "@/lib/firebaseAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { OfflineIndicator, SyncStatusIndicator } from "@/components/OfflineIndicator";
+import { PWAInstallButtonSimple } from "@/components/PWAInstallButton";
+import { PWAStatusIndicator } from "@/components/PWAStatus";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -78,6 +81,12 @@ export default function Layout({ children, currentView, onViewChange, selectedCl
             </div>
             
             <div className="flex items-center space-x-3">
+              {/* PWA Status */}
+              <PWAStatusIndicator />
+
+              {/* PWA Install Button */}
+              <PWAInstallButtonSimple />
+
               {/* User Menu */}
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium" data-testid="avatar-user">
@@ -143,6 +152,10 @@ export default function Layout({ children, currentView, onViewChange, selectedCl
       <main>
         {children}
       </main>
+
+      {/* PWA Indicators */}
+      <OfflineIndicator />
+      <SyncStatusIndicator />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import Dashboard from "./Dashboard";
 import ClientManagement from "./ClientManagement";
 import Ledger from "./Ledger";
 import Reports from "./Reports";
+import { PWAShortcuts } from "@/components/PWAShortcuts";
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'ledger' | 'reports'>('dashboard');
@@ -21,6 +22,22 @@ export default function Home() {
 
   const handleNavigate = (view: 'clients' | 'ledger' | 'reports') => {
     setCurrentView(view);
+  };
+
+  const handlePWANavigate = (view: 'dashboard' | 'clients' | 'ledger' | 'reports') => {
+    setCurrentView(view);
+  };
+
+  const handlePWAAction = (action: string) => {
+    switch (action) {
+      case 'add-transaction':
+        // Navigate to ledger and trigger add transaction
+        setCurrentView('ledger');
+        // You could add a state to trigger the add transaction modal
+        break;
+      default:
+        break;
+    }
   };
 
   const handleClientChange = (clientId: string | null) => {
@@ -44,6 +61,11 @@ export default function Home() {
       onViewChange={setCurrentView}
       selectedClientId={selectedClientId}
     >
+      <PWAShortcuts
+        onNavigate={handlePWANavigate}
+        onAction={handlePWAAction}
+      />
+
       {currentView === 'dashboard' && (
         <Dashboard
           onNavigate={handleNavigate}
