@@ -52,18 +52,27 @@ npm install
 
 ### 3. Configure Firebase
 
-The Firebase configuration is already set up in `client/src/lib/firebase.ts` with your project credentials:
-
-```typescript
-const firebaseConfig = {
-  apiKey: "AIzaSyBi5xf0vlSheTuOCTHf45Nq-ihUYiKCweA",
-  authDomain: "nutri-suppliers.firebaseapp.com",
-  projectId: "nutri-suppliers",
-  storageBucket: "nutri-suppliers.firebasestorage.app",
-  messagingSenderId: "421640597836",
-  appId: "1:421640597836:web:709cc0cb3521b895c95fe9"
-};
+1. Copy the environment template file:
+```bash
+cp .env.example .env
 ```
+
+2. Get your Firebase project configuration:
+   - Go to Firebase Console → Project Settings → General tab
+   - Scroll down to "Your apps" section
+   - Copy your web app's configuration
+
+3. Update `.env` file with your Firebase credentials:
+```bash
+VITE_FIREBASE_API_KEY=your_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+⚠️ **Important**: Never commit your `.env` file to version control. It's already added to `.gitignore`.
 
 ### 4. Deploy Firestore Security Rules
 
