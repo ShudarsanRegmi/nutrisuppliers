@@ -54,7 +54,7 @@ npm install
 
 1. Copy the environment template file:
 ```bash
-cp .env.example .env
+cp client/.env.example client/.env
 ```
 
 2. Get your Firebase project configuration:
@@ -62,7 +62,7 @@ cp .env.example .env
    - Scroll down to "Your apps" section
    - Copy your web app's configuration
 
-3. Update `.env` file with your Firebase credentials:
+3. Update `client/.env` file with your Firebase credentials:
 ```bash
 VITE_FIREBASE_API_KEY=your_api_key_here
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
