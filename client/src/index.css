@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import './styles/pwa.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* PWA Styles */
-@import './styles/pwa.css';
 
 :root {
   --background: hsl(0 0% 100%);

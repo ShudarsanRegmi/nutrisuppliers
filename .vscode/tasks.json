@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build and Preview Digital Ledger",
+			"type": "shell",
+			"command": "cd /home/aparichit/Desktop/Projects/DigitalLedger && npm run build && npm run preview",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

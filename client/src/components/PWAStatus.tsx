@@ -217,14 +217,14 @@ export function PWAStatusIndicator() {
     );
   }
 
-  if (manifestOk) {
-    return (
-      <Badge variant="outline" className="text-xs">
-        <Download size={12} className="mr-1" />
-        Installable
-      </Badge>
-    );
-  }
+  // if (manifestOk) {
+  //   return (
+  //     <Badge variant="outline" className="text-xs">
+  //       <Download size={12} className="mr-1" />
+  //       Installable
+  //     </Badge>
+  //   );
+  // }
 
   return null;
 }

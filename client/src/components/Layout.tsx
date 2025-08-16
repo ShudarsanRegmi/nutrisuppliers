@@ -82,10 +82,10 @@ export default function Layout({ children, currentView, onViewChange, selectedCl
             
             <div className="flex items-center space-x-3">
               {/* PWA Status */}
-              <PWAStatusIndicator />
+              {/* <PWAStatusIndicator /> */}
 
               {/* PWA Install Button */}
-              <PWAInstallButtonSimple />
+              {/* <PWAInstallButtonSimple /> */}
 
               {/* User Menu */}
               <div className="flex items-center space-x-2">
@@ -155,7 +155,7 @@ export default function Layout({ children, currentView, onViewChange, selectedCl
 
       {/* PWA Indicators */}
       <OfflineIndicator />
-      <SyncStatusIndicator />
+      {/* <SyncStatusIndicator /> */}
     </div>
   );
 }

@@ -1,0 +1,21 @@
+{
+  "name": "delete-image-function",
+  "version": "1.0.0",
+  "description": "Appwrite function to delete images with Firebase auth verification",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.js",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "node-appwrite": "^14.1.0",
+    "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  },
+  "keywords": ["appwrite", "firebase", "image", "delete"],
+  "author": "NutriSuppliers",
+  "license": "MIT"
+}

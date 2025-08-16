@@ -1,0 +1,16 @@
+{
+  "name": "upload-image-function",
+  "version": "1.0.0",
+  "description": "Appwrite function to upload images with Firebase auth verification",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "node-appwrite": "^13.0.0",
+    "firebase-admin": "^12.0.0"
+  },
+  "keywords": ["appwrite", "firebase", "image", "upload"],
+  "author": "NutriSuppliers",
+  "license": "MIT"
+}

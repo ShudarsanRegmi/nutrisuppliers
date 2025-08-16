@@ -41,7 +41,7 @@ function App() {
         <Router />
         <PWAInstallButton />
         <PWAUpdatePrompt />
-        <PWAStatus />
+        {/* <PWAStatus /> */}
       </TooltipProvider>
     </QueryClientProvider>
   );
