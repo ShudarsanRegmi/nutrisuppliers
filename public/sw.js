@@ -1,5 +1,5 @@
 // NutriSuppliers Service Worker
-const CACHE_NAME = 'nutrisuppliers-v1';
+const CACHE_NAME = 'nutrisuppliers-v2';
 const urlsToCache = [
   '/',
   '/index.html',
