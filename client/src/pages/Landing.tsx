@@ -87,7 +87,7 @@ export default function Landing() {
             <BookOpen className="text-white text-2xl" size={32} />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">Nutri Suppliers</CardTitle>
-          <p className="text-gray-600">Digital Ledger for Medical Supplies</p>
+          <p className="text-gray-600">Digital Ledger for Medical Suppliers</p>
         </CardHeader>
 
         <CardContent className="space-y-6">
