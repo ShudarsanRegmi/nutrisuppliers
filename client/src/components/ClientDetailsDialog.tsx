@@ -217,19 +217,6 @@ export default function ClientDetailsDialog({
                 Select Client for Ledger
               </Button>
             )}
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(client);
-                onOpenChange(false);
-              }}
-              className="w-full h-12 text-sm sm:text-base"
-              variant="outline"
-            >
-              <Edit className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Edit Client Details</span>
-              <span className="sm:hidden">Edit</span>
-            </Button>
           </div>
         </div>
       </DialogContent>

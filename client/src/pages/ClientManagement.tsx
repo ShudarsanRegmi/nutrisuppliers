@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText, MoreVertical, Edit } from "lucide-react";
+import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText, MoreVertical, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ClientForm from "@/components/ClientForm";
@@ -33,6 +39,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [lastTap, setLastTap] = useState<number>(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -182,17 +189,28 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   };
 
   const handleClientClick = (client: Client) => {
-    // Navigate to ledger with selected client
-    onClientSelect(client.id);
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // milliseconds
+    
+    if (now - lastTap < DOUBLE_TAP_DELAY) {
+      // Double tap detected - open details dialog
+      setSelectedClient(client);
+      setIsDetailsDialogOpen(true);
+    } else {
+      // Single tap - navigate to ledger with selected client
+      onClientSelect(client.id);
+    }
+    setLastTap(now);
   };
 
-  const handleClientDetails = (client: Client, event: React.MouseEvent) => {
+  const handleViewClient = (client: Client, event: React.MouseEvent) => {
     event.stopPropagation();
     setSelectedClient(client);
     setIsDetailsDialogOpen(true);
   };
 
-  const handleEditClient = (client: Client) => {
+  const handleEditClient = (client: Client, event?: React.MouseEvent) => {
+    if (event) event.stopPropagation();
     setEditingClient(client);
     setIsEditDialogOpen(true);
   };
@@ -299,13 +317,27 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                       {formatBalance(client.balance || 0)}
                     </p>
                   </div>
-                  <button
-                    onClick={(e) => handleClientDetails(client, e)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    title="View client details"
-                  >
-                    <MoreVertical className="h-5 w-5 text-gray-600" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        title="More options"
+                      >
+                        <MoreVertical className="h-5 w-5 text-gray-600" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={(e) => handleViewClient(client, e)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => handleEditClient(client, e)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Client
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
               <div className="mb-2">
@@ -373,8 +405,25 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
         open={isDetailsDialogOpen}
         onOpenChange={setIsDetailsDialogOpen}
         client={selectedClient}
-        onEdit={handleEditClient}
+        onEdit={() => {}} // Remove edit functionality from details dialog
       />
+
+      {/* Edit Client Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-lg">Edit Client</DialogTitle>
+            <DialogDescription>
+              Update client information for your business.
+            </DialogDescription>
+          </DialogHeader>
+          <ClientForm
+            onSubmit={(data) => updateClientMutation.mutate(data)}
+            isLoading={updateClientMutation.isPending}
+            defaultValues={getEditDefaultValues()}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
