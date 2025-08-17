@@ -11,7 +11,7 @@ export default function LoadingScreen() {
         
         {/* Brand Name */}
         <h1 className="text-3xl font-bold text-white mb-2">Nutri Suppliers</h1>
-        <p className="text-blue-100 mb-8">Digital Ledger for Medical Supplies</p>
+        <p className="text-blue-100 mb-8">Digital Ledger for Medical Suppliers</p>
         
         {/* Loading Animation */}
         <div className="flex items-center justify-center space-x-2">
