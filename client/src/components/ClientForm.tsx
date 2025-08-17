@@ -14,9 +14,10 @@ interface ClientFormProps {
   onSubmit: (data: ClientFormData) => void;
   isLoading?: boolean;
   defaultValues?: Partial<ClientFormData>;
+  submitButtonText?: string;
 }
 
-export default function ClientForm({ onSubmit, isLoading = false, defaultValues }: ClientFormProps) {
+export default function ClientForm({ onSubmit, isLoading = false, defaultValues, submitButtonText = "Add Client" }: ClientFormProps) {
   const form = useForm<ClientFormData>({
     resolver: zodResolver(insertClientSchema),
     defaultValues: {
@@ -204,7 +205,7 @@ export default function ClientForm({ onSubmit, isLoading = false, defaultValues 
             disabled={isLoading}
             data-testid="button-submit-client"
           >
-            {isLoading ? "Adding..." : "Add Client"}
+            {isLoading ? (submitButtonText === "Add Client" ? "Adding..." : "Saving...") : submitButtonText}
           </Button>
         </div>
       </form>

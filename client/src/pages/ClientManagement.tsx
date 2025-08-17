@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText, MoreVertical, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,10 +39,20 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [lastTap, setLastTap] = useState<number>(0);
+  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
+  const clickCount = useRef(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimeout.current) {
+        clearTimeout(clickTimeout.current);
+      }
+    };
+  }, []);
 
   const { data: clients = [], isLoading } = useQuery<ClientWithStats[]>({
     queryKey: ["clientsWithStats", user?.id],
@@ -189,18 +199,23 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   };
 
   const handleClientClick = (client: Client) => {
-    const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300; // milliseconds
+    clickCount.current += 1;
     
-    if (now - lastTap < DOUBLE_TAP_DELAY) {
-      // Double tap detected - open details dialog
-      setSelectedClient(client);
-      setIsDetailsDialogOpen(true);
-    } else {
-      // Single tap - navigate to ledger with selected client
-      onClientSelect(client.id);
+    if (clickTimeout.current) {
+      clearTimeout(clickTimeout.current);
     }
-    setLastTap(now);
+    
+    clickTimeout.current = setTimeout(() => {
+      if (clickCount.current === 1) {
+        // Single click - navigate to ledger
+        onClientSelect(client.id);
+      } else if (clickCount.current === 2) {
+        // Double click - open details dialog
+        setSelectedClient(client);
+        setIsDetailsDialogOpen(true);
+      }
+      clickCount.current = 0;
+    }, 250); // 250ms delay to detect double click
   };
 
   const handleViewClient = (client: Client, event: React.MouseEvent) => {
@@ -421,6 +436,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
             onSubmit={(data) => updateClientMutation.mutate(data)}
             isLoading={updateClientMutation.isPending}
             defaultValues={getEditDefaultValues()}
+            submitButtonText="Save Changes"
           />
         </DialogContent>
       </Dialog>
