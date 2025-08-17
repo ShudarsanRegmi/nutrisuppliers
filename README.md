@@ -139,29 +139,6 @@ users/{userId}
 
 ## 🎯 Migration from Express.js
 
-This app has been migrated from an Express.js + PostgreSQL backend to a fully client-side Firebase solution:
-
-### What Changed:
-- ✅ Removed Express.js server
-- ✅ Replaced PostgreSQL with Firestore
-- ✅ Replaced Replit Auth with Firebase Auth
-- ✅ Updated all API calls to use Firebase SDK
-- ✅ Added real-time data synchronization
-- ✅ Simplified deployment (static hosting)
-
-### What Stayed the Same:
-- ✅ All React components and UI
-- ✅ Business logic and data flow
-- ✅ User experience and features
-
-## 📝 Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run check` - Type checking
-- `npm run deploy` - Deploy to Firebase
-
 ## 🤝 Contributing
 
 1. Fork the repository
