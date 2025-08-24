@@ -6,9 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
 import { InsertTransaction, TransactionWithBalance } from "@/lib/firebaseTypes";
+import CustomNepaliDateInput from "@/components/CustomNepaliDateInput";
+import { 
+  NepaliDateType, 
+  nepaliToEnglish, 
+  englishToNepali, 
+  getCurrentNepaliDate,
+  DEFAULT_NEPALI_YEAR
+} from "@/lib/nepaliDate";
 
 const transactionFormSchema = z.object({
-  date: z.string().min(1, "Date is required"),
+  nepaliDate: z.object({
+    year: z.number(),
+    month: z.number(),
+    date: z.number(),
+  }),
   particulars: z.string().min(1, "Particulars is required"),
   billNo: z.string().optional(),
   clientId: z.string().optional(),
@@ -36,14 +48,21 @@ export default function TransactionForm({
   mode = "create"
 }: TransactionFormProps) {
 
+  // Use a static default for initial form values
+  const staticDefaultNepaliDate: NepaliDateType = {
+    year: DEFAULT_NEPALI_YEAR,
+    month: 0, // Baisakh
+    date: 1
+  };
+
   // Prepare default values for edit mode
-  const getDefaultValues = () => {
+  const getDefaultValues = (): TransactionFormData => {
     if (mode === "edit" && editTransaction) {
       const isCredit = editTransaction.creditAmount > 0;
       const amount = isCredit ? editTransaction.creditAmount : editTransaction.debitAmount;
 
       return {
-        date: editTransaction.date.toISOString().split('T')[0],
+        nepaliDate: englishToNepali(editTransaction.date),
         particulars: editTransaction.particulars,
         billNo: editTransaction.billNo || "",
         type: isCredit ? "credit" as const : "debit" as const,
@@ -51,14 +70,22 @@ export default function TransactionForm({
       };
     }
 
-    return {
-      date: new Date().toISOString().split('T')[0],
+    const baseDefaults: TransactionFormData = {
+      nepaliDate: staticDefaultNepaliDate,
       particulars: "",
       billNo: "",
       type: "credit" as const,
       amount: "",
-      ...defaultValues,
     };
+
+    if (defaultValues) {
+      return {
+        ...baseDefaults,
+        ...defaultValues,
+      };
+    }
+
+    return baseDefaults;
   };
 
   const form = useForm<TransactionFormData>({
@@ -74,11 +101,12 @@ export default function TransactionForm({
 
     const amount = parseFloat(data.amount);
     const transactionData: InsertTransaction = {
-      date: new Date(data.date),
+      date: nepaliToEnglish(data.nepaliDate),
       particulars: data.particulars,
       billNo: data.billNo || undefined,
       debitAmount: data.type === "debit" ? amount : 0,
       creditAmount: data.type === "credit" ? amount : 0,
+      nepaliDate: data.nepaliDate,
     };
 
     console.log("Submitting transaction with clientId:", clientId);
@@ -91,19 +119,15 @@ export default function TransactionForm({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date</FormLabel>
-              <FormControl>
-                <Input 
-                  type="date" 
-                  {...field} 
-                  data-testid="input-transaction-date"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          name="nepaliDate"
+          render={({ field, fieldState }) => (
+            <CustomNepaliDateInput
+              value={field.value}
+              onChange={field.onChange}
+              label="Date (Nepali)"
+              error={fieldState.error?.message}
+              disabled={isLoading}
+            />
           )}
         />
         

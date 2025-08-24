@@ -5,6 +5,7 @@ import { Users, BookOpen, TrendingUp, Plus, ArrowRight, Package, Stethoscope, Pi
 import { useQuery } from "@tanstack/react-query";
 import { getClients, getAllTransactions, getClientBalance } from "@/lib/firebaseDb";
 import { useAuth } from "@/hooks/useAuth";
+import { displayDateAsNepali } from "@/lib/nepaliDate";
 import { TransactionWithClient } from "@/lib/firebaseTypes";
 
 interface DashboardProps {
@@ -87,10 +88,7 @@ export default function Dashboard({ onNavigate, onClientSelect }: DashboardProps
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-IN', {
-      month: 'short',
-      day: 'numeric'
-    });
+    return displayDateAsNepali(date);
   };
 
   return (

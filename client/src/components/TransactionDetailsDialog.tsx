@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TransactionWithBalance } from "@/lib/firebaseTypes";
+import { displayDateAsNepali } from "@/lib/nepaliDate";
 
 interface TransactionDetailsDialogProps {
   open: boolean;
@@ -40,24 +41,11 @@ export default function TransactionDetailsDialog({
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return displayDateAsNepali(date);
   };
 
   const formatDateTime = (date: Date) => {
-    return date.toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-      timeZoneName: 'short'
-    });
+    return displayDateAsNepali(date);
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -126,16 +114,20 @@ export default function TransactionDetailsDialog({
             <div className="flex items-start space-x-3">
               <Calendar className="h-5 w-5 text-gray-600 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-gray-700">Transaction Date</p>
+                <p className="font-medium text-gray-700">Transaction Date (BS)</p>
                 <p className="text-gray-900">{formatDate(transaction.date)}</p>
+                <p className="font-medium text-gray-700 text-sm mt-2">Transaction Date (AD)</p>
+                <p className="text-gray-600 text-sm">{transaction.date.toLocaleDateString()}</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
               <Clock className="h-5 w-5 text-gray-600 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-gray-700">Created On</p>
+                <p className="font-medium text-gray-700">Created On (BS)</p>
                 <p className="text-gray-900">{formatDateTime(transaction.createdAt)}</p>
+                <p className="font-medium text-gray-700 text-sm mt-2">Created On (AD)</p>
+                <p className="text-gray-600 text-sm">{transaction.createdAt.toLocaleDateString()} {transaction.createdAt.toLocaleTimeString()}</p>
                 <p className="text-sm text-gray-500 mt-1">{formatTimeAgo(transaction.createdAt)}</p>
               </div>
             </div>

@@ -13,6 +13,7 @@ import TransactionForm from "@/components/TransactionForm";
 import TransactionCard from "@/components/TransactionCard";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import TransactionDetailsDialog from "@/components/TransactionDetailsDialog";
+import { displayDateAsNepali } from "@/lib/nepaliDate";
 import {
   getClients,
   getTransactions,
@@ -265,11 +266,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
 
   const formatDate = (date: Date | string) => {
     const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return displayDateAsNepali(dateObj);
   };
 
   const handleSort = (field: SortField) => {
@@ -627,7 +624,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                     {hasMore && <span className="text-blue-600 ml-1">(+{totalCount - pageSize} more)</span>}
                   </span>
                   <span>
-                    {sortField === "date" ? "By Date" : "By Created"} • {sortOrder === "asc" ? "↑" : "↓"}
+                    {sortField === "date" ? "By Date (BS)" : "By Created (BS)"} • {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
                 </div>
               </div>
@@ -641,7 +638,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                           className="flex items-center space-x-1 hover:text-gray-700"
                           data-testid="sort-date"
                         >
-                          <span>Date</span>
+                          <span>Date (BS)</span>
                           {getSortIcon("date")}
                         </button>
                       </th>
@@ -656,7 +653,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                           className="flex items-center space-x-1 hover:text-gray-700 justify-center"
                           data-testid="sort-created"
                         >
-                          <span>Created</span>
+                          <span>Created (BS)</span>
                           {getSortIcon("createdAt")}
                         </button>
                       </th>
@@ -751,7 +748,7 @@ export default function Ledger({ selectedClientId, onClientSelect }: LedgerProps
                   </Button>
                 </div>
                 <div className="text-xs text-gray-400">
-                  Sorted by {sortField === "date" ? "Transaction Date" : "Created Date"}
+                  Sorted by {sortField === "date" ? "Transaction Date (BS)" : "Created Date (BS)"}
                   ({sortOrder === "asc" ? "Oldest first" : "Newest first"})
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NepaliDateType } from "./nepaliDate";
 
 // Firebase User type
 export interface FirebaseUser {
@@ -69,6 +70,8 @@ export interface InsertTransaction {
   billNo?: string | null;
   debitAmount?: number;  // Changed from string to number
   creditAmount?: number; // Changed from string to number
+  // Add nepali date for form handling
+  nepaliDate?: NepaliDateType;
 }
 
 // Validation schemas

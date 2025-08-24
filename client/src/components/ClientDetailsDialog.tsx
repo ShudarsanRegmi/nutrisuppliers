@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Client, InsertClient } from "@/lib/firebaseTypes";
+import { displayDateAsNepali } from "@/lib/nepaliDate";
 import ClientForm from "./ClientForm";
 import { useState } from "react";
 
@@ -45,14 +46,7 @@ export default function ClientDetailsDialog({
   };
 
   const formatDateTime = (date: Date) => {
-    return date.toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+    return displayDateAsNepali(date);
   };
 
   return (

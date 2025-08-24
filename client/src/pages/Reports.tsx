@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { getMonthlyTotals, getClients, getAllTransactions, getClientBalance } from "@/lib/firebaseDb";
 import { MonthlyTotals, TransactionWithClient } from "@/lib/firebaseTypes";
+import { displayDateAsNepali, englishToNepali } from "@/lib/nepaliDate";
 import {
   BarChart,
   Bar,
@@ -103,25 +104,45 @@ export default function Reports() {
     );
 
     // Monthly revenue trend data
-    const monthlyData = {};
+    const monthlyData: Record<string, { month: string; revenue: number; expenses: number; transactions: number; net: number }> = {};
     filteredTransactions.forEach(transaction => {
-      const month = new Date(transaction.createdAt).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short'
-      });
+      try {
+        const nepaliDate = englishToNepali(new Date(transaction.createdAt));
+        const month = `${nepaliDate.year}/${nepaliDate.month.toString().padStart(2, '0')}`;
 
-      if (!monthlyData[month]) {
-        monthlyData[month] = { month, revenue: 0, expenses: 0, transactions: 0, net: 0 };
-      }
+        if (!monthlyData[month]) {
+          monthlyData[month] = { month, revenue: 0, expenses: 0, transactions: 0, net: 0 };
+        }
 
-      if (transaction.creditAmount > 0) {
-        monthlyData[month].revenue += transaction.creditAmount;
-        monthlyData[month].net += transaction.creditAmount;
-      } else {
-        monthlyData[month].expenses += transaction.debitAmount;
-        monthlyData[month].net -= transaction.debitAmount;
+        if (transaction.creditAmount > 0) {
+          monthlyData[month].revenue += transaction.creditAmount;
+          monthlyData[month].net += transaction.creditAmount;
+        } else {
+          monthlyData[month].expenses += transaction.debitAmount;
+          monthlyData[month].net -= transaction.debitAmount;
+        }
+        monthlyData[month].transactions += 1;
+      } catch (error) {
+        console.error('Error converting date to Nepali:', error);
+        // Fallback to English date if Nepali conversion fails
+        const month = new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'short'
+        });
+
+        if (!monthlyData[month]) {
+          monthlyData[month] = { month, revenue: 0, expenses: 0, transactions: 0, net: 0 };
+        }
+
+        if (transaction.creditAmount > 0) {
+          monthlyData[month].revenue += transaction.creditAmount;
+          monthlyData[month].net += transaction.creditAmount;
+        } else {
+          monthlyData[month].expenses += transaction.debitAmount;
+          monthlyData[month].net -= transaction.debitAmount;
+        }
+        monthlyData[month].transactions += 1;
       }
-      monthlyData[month].transactions += 1;
     });
 
     const monthlyChartData = Object.values(monthlyData).sort((a: any, b: any) =>

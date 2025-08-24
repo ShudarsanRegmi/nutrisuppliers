@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Edit, Trash2, Phone, Mail, MapPin, Calendar, Fi
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TransactionWithBalance } from "@/lib/firebaseTypes";
+import { displayDateAsNepali } from "@/lib/nepaliDate";
 
 interface TransactionCardProps {
   transaction: TransactionWithBalance;
@@ -26,11 +27,7 @@ export default function TransactionCard({ transaction, onEdit, onDelete, onRowCl
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return displayDateAsNepali(date);
   };
 
   const isCredit = transaction.creditAmount > 0;
