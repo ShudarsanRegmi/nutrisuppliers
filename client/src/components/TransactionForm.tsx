@@ -48,12 +48,8 @@ export default function TransactionForm({
   mode = "create"
 }: TransactionFormProps) {
 
-  // Use a static default for initial form values
-  const staticDefaultNepaliDate: NepaliDateType = {
-    year: DEFAULT_NEPALI_YEAR,
-    month: 0, // Baisakh
-    date: 1
-  };
+  // Use today's date converted to Nepali for default values
+  const staticDefaultNepaliDate: NepaliDateType = englishToNepali(new Date());
 
   // Prepare default values for edit mode
   const getDefaultValues = (): TransactionFormData => {
