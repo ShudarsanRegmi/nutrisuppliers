@@ -23,6 +23,8 @@ export interface Client {
   email?: string | null;
   address?: string | null;
   panNumber?: string | null; // PAN number for tax purposes
+  isDeleted?: boolean; // Soft delete flag
+  deletedAt?: Date | null; // When the client was deleted
   createdAt: Date;
   updatedAt: Date;
   // Computed fields (calculated on client-side)
@@ -39,6 +41,8 @@ export interface InsertClient {
   email?: string | null;
   address?: string | null;
   panNumber?: string | null;
+  isDeleted?: boolean;
+  deletedAt?: Date | null;
 }
 
 // Transaction types with proper data types

@@ -98,13 +98,16 @@ export const getClients = async (userId: string): Promise<Client[]> => {
   const q = query(clientsRef, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q);
   
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    userId,
-    ...doc.data(),
-    createdAt: convertTimestamp(doc.data().createdAt),
-    updatedAt: convertTimestamp(doc.data().updatedAt),
-  } as Client));
+  return querySnapshot.docs
+    .map(doc => ({
+      id: doc.id,
+      userId,
+      ...doc.data(),
+      createdAt: convertTimestamp(doc.data().createdAt),
+      updatedAt: convertTimestamp(doc.data().updatedAt),
+      deletedAt: doc.data().deletedAt ? convertTimestamp(doc.data().deletedAt) : null,
+    } as Client))
+    .filter(client => !client.isDeleted); // Filter out soft-deleted clients
 };
 
 export const createClient = async (userId: string, clientData: InsertClient): Promise<Client> => {
@@ -114,6 +117,8 @@ export const createClient = async (userId: string, clientData: InsertClient): Pr
   const docRef = await addDoc(clientsRef, {
     ...clientData,
     userId,
+    isDeleted: false,
+    deletedAt: null,
     createdAt: Timestamp.fromDate(now),
     updatedAt: Timestamp.fromDate(now),
   });
@@ -122,6 +127,8 @@ export const createClient = async (userId: string, clientData: InsertClient): Pr
     id: docRef.id,
     userId,
     ...clientData,
+    isDeleted: false,
+    deletedAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -165,6 +172,8 @@ export const updateClient = async (
       email: data.email || null,
       address: data.address || null,
       panNumber: data.panNumber || null,
+      isDeleted: data.isDeleted || false,
+      deletedAt: data.deletedAt ? convertTimestamp(data.deletedAt) : null,
       createdAt: convertTimestamp(data.createdAt),
       updatedAt: convertTimestamp(data.updatedAt),
     };
@@ -175,6 +184,19 @@ export const updateClient = async (
 };
 
 export const deleteClient = async (userId: string, clientId: string): Promise<void> => {
+  // Soft delete - mark client as deleted instead of removing
+  const clientRef = doc(getClientsCollection(userId), clientId);
+  const now = new Date();
+  
+  await updateDoc(clientRef, {
+    isDeleted: true,
+    deletedAt: Timestamp.fromDate(now),
+    updatedAt: Timestamp.fromDate(now),
+  });
+};
+
+// Hard delete function (optional - for admin purposes)
+export const hardDeleteClient = async (userId: string, clientId: string): Promise<void> => {
   const batch = writeBatch(db);
 
   // Delete client
@@ -509,13 +531,16 @@ export const subscribeToClients = (
   const q = query(clientsRef, orderBy("createdAt", "desc"));
 
   return onSnapshot(q, (querySnapshot) => {
-    const clients = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      userId,
-      ...doc.data(),
-      createdAt: convertTimestamp(doc.data().createdAt),
-      updatedAt: convertTimestamp(doc.data().updatedAt),
-    } as Client));
+    const clients = querySnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        userId,
+        ...doc.data(),
+        createdAt: convertTimestamp(doc.data().createdAt),
+        updatedAt: convertTimestamp(doc.data().updatedAt),
+        deletedAt: doc.data().deletedAt ? convertTimestamp(doc.data().deletedAt) : null,
+      } as Client))
+      .filter(client => !client.isDeleted); // Filter out soft-deleted clients
 
     callback(clients);
   });

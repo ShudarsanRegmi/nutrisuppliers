@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText, MoreVertical, Edit, Eye } from "lucide-react";
+import { Plus, Users, Phone, Mail, MapPin, Building2, User, FileText, MoreVertical, Edit, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import {
@@ -13,10 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ClientForm from "@/components/ClientForm";
 import ClientDetailsDialog from "@/components/ClientDetailsDialog";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 import {
   getClients,
   createClient,
   updateClient,
+  deleteClient,
   getClientBalance,
   getAllTransactions,
   removeStoredBalances
@@ -37,8 +39,10 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
   const clickCount = useRef(0);
   const { toast } = useToast();
@@ -149,6 +153,41 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     },
   });
 
+  const deleteClientMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      if (!user?.id) throw new Error("User not authenticated");
+      return await deleteClient(user.id, clientId);
+    },
+    onSuccess: () => {
+      // Invalidate all client-related queries
+      queryClient.invalidateQueries({
+        queryKey: ["clientsWithStats"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["clientBalance"],
+        exact: false
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["allTransactions"],
+        exact: false
+      });
+      setIsDeleteDialogOpen(false);
+      setDeletingClient(null);
+      toast({
+        title: "Success",
+        description: "Client deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete client",
+        variant: "destructive",
+      });
+    },
+  });
+
   const cleanupBalancesMutation = useMutation({
     mutationFn: async (clientId: string) => {
       if (!user?.id) throw new Error("User not authenticated");
@@ -228,6 +267,18 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     if (event) event.stopPropagation();
     setEditingClient(client);
     setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClient = (client: Client, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setDeletingClient(client);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteClient = () => {
+    if (deletingClient) {
+      deleteClientMutation.mutate(deletingClient.id);
+    }
   };
 
   const getEditDefaultValues = () => {
@@ -351,6 +402,13 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Client
                       </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={(e) => handleDeleteClient(client, e)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Client
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -440,6 +498,19 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
           />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={confirmDeleteClient}
+        title="Delete Client"
+        description={`Are you sure you want to delete "${deletingClient?.name}"? This action cannot be undone and will hide the client from all lists.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteClientMutation.isPending}
+        variant="destructive"
+      />
     </div>
   );
 }
